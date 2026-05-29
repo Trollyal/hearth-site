@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hearth — multi-agent orchestration framework</title>
+<meta name="description" content="Hearth turns your main coding session into a project manager that dispatches specialist agent crews to do real software work — coordinated through durable file-based state, with human-in-the-loop gates. Framework, desktop app, and CLI." />
+<meta property="og:title" content="Hearth — multi-agent orchestration" />
+<meta property="og:description" content="Your session becomes a PM. It dispatches specialist crews, coordinated through durable file-based state. Framework · app · CLI." />
+<meta property="og:type" content="website" />
+<meta name="theme-color" content="#0E0E0D" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0E0E0D; --surface:#141413; --surface-2:#1C1C1A; --border:#2A2A28;
+    --text:#FAF9F5; --muted:#B0AEA5; --dim:#6A6A66;
+    --ember:#D97757; --ember-soft:rgba(217,119,87,.14); --ember-line:rgba(217,119,87,.32);
+    --frost:#7DA8B8;
+    --sans:"Geist","Inter",system-ui,-apple-system,sans-serif;
+    --mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,monospace;
+    --maxw:1080px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+  body{
+    background:var(--bg); color:var(--text); font-family:var(--sans);
+    line-height:1.55; font-size:16px; letter-spacing:-.01em;
+    overflow-x:hidden;
+    /* atmosphere: ember hearth-glow from top, settling into dark */
+    background-image:
+      radial-gradient(120% 90% at 50% -10%, rgba(217,119,87,.10), transparent 55%),
+      radial-gradient(80% 60% at 85% 8%, rgba(125,168,184,.05), transparent 60%);
+    background-attachment:fixed;
+  }
+  /* fine grain overlay for texture */
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:1; opacity:.025;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px;position:relative;z-index:2}
+  a{color:inherit;text-decoration:none}
+  ::selection{background:var(--ember-soft);color:var(--text)}
+
+  /* ── tokens ───────────────────────────────────────── */
+  .mono{font-family:var(--mono)}
+  .ember{color:var(--ember)}
+  .frost{color:var(--frost)}
+  .muted{color:var(--muted)}
+  .eyebrow{
+    font-family:var(--mono); font-size:12px; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--ember); display:inline-flex; align-items:center; gap:9px;
+  }
+  .eyebrow::before{content:"";width:18px;height:1px;background:var(--ember-line)}
+
+  /* ── nav ─────────────────────────────────────────── */
+  header.nav{position:sticky;top:0;z-index:20;backdrop-filter:blur(10px);
+    background:rgba(14,14,13,.72);border-bottom:1px solid var(--border)}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:58px}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:600}
+  .brand .mk{width:24px;height:24px;display:block}
+  .wordmark{font-weight:600;letter-spacing:.34em;font-size:14px;padding-left:.34em}
+  .nav-tag{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.04em}
+  @media(max-width:560px){.nav-tag{display:none}}
+
+  /* ── hero ────────────────────────────────────────── */
+  .hero{padding:78px 0 64px;text-align:center;position:relative}
+  .mark-xl{width:118px;height:118px;margin:0 auto 30px;position:relative;
+    animation:rise .9s cubic-bezier(.2,.7,.2,1) both}
+  .mark-xl svg{width:100%;height:100%;position:relative;z-index:2}
+  .mark-xl::after{content:"";position:absolute;inset:-46%;z-index:1;border-radius:50%;
+    background:radial-gradient(circle,rgba(217,119,87,.34),transparent 66%);
+    filter:blur(8px);animation:emberpulse 4.6s ease-in-out infinite}
+  @keyframes emberpulse{0%,100%{opacity:.5;transform:scale(.94)}50%{opacity:1;transform:scale(1.06)}}
+
+  h1.word{font-size:clamp(54px,15vw,116px);font-weight:600;letter-spacing:.12em;
+    line-height:.9;margin-bottom:22px;animation:rise .9s .06s cubic-bezier(.2,.7,.2,1) both}
+  h1.word .a{color:var(--ember);text-shadow:0 0 34px rgba(217,119,87,.5)}
+  .lede{font-size:clamp(18px,3.4vw,23px);max-width:660px;margin:0 auto 14px;color:var(--text);
+    animation:rise .9s .12s cubic-bezier(.2,.7,.2,1) both}
+  .sub{font-size:clamp(15px,2.6vw,17px);max-width:620px;margin:0 auto 30px;color:var(--muted);
+    animation:rise .9s .18s cubic-bezier(.2,.7,.2,1) both}
+  .pills{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;
+    animation:rise .9s .24s cubic-bezier(.2,.7,.2,1) both}
+  .pill{font-family:var(--mono);font-size:13px;border:1px solid var(--border);
+    background:var(--surface);padding:8px 15px;border-radius:999px;color:var(--muted);
+    display:inline-flex;align-items:center;gap:8px}
+  .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--ember)}
+  .pill.active .dot{box-shadow:0 0 0 0 rgba(217,119,87,.6);animation:ping 2.4s infinite}
+  @keyframes ping{0%{box-shadow:0 0 0 0 rgba(217,119,87,.5)}70%{box-shadow:0 0 0 7px rgba(217,119,87,0)}100%{box-shadow:0 0 0 0 rgba(217,119,87,0)}}
+  @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+
+  /* ── section scaffolding ─────────────────────────── */
+  section{padding:64px 0;position:relative}
+  .sec-head{margin-bottom:34px;max-width:640px}
+  .sec-head h2{font-size:clamp(26px,5vw,38px);font-weight:600;letter-spacing:-.02em;margin:14px 0 10px}
+  .sec-head p{color:var(--muted);font-size:16px}
+  .rule{height:1px;background:linear-gradient(90deg,var(--ember-line),transparent);border:0}
+
+  /* ── how it works (steps) ────────────────────────── */
+  .steps{display:grid;gap:14px;grid-template-columns:1fr}
+  @media(min-width:720px){.steps{grid-template-columns:repeat(2,1fr)}}
+  .step{border:1px solid var(--border);background:var(--surface);border-radius:14px;padding:22px;
+    position:relative;overflow:hidden}
+  .step .n{font-family:var(--mono);font-size:12px;color:var(--ember);letter-spacing:.1em}
+  .step h3{font-size:18px;font-weight:600;margin:9px 0 7px}
+  .step p{color:var(--muted);font-size:14.5px}
+  .step::after{content:"";position:absolute;right:-30px;top:-30px;width:90px;height:90px;
+    background:var(--ember-soft);border-radius:50%;filter:blur(20px);opacity:.6}
+
+  /* ── preview frames (shared) ─────────────────────── */
+  .frame{border:1px solid var(--border);border-radius:13px;overflow:hidden;background:var(--surface);
+    box-shadow:0 24px 60px -28px rgba(0,0,0,.8),0 0 0 1px rgba(217,119,87,.04)}
+  .titlebar{display:flex;align-items:center;gap:8px;padding:11px 14px;background:var(--surface-2);
+    border-bottom:1px solid var(--border)}
+  .tl-dots{display:flex;gap:7px}
+  .tl-dots i{width:11px;height:11px;border-radius:50%;background:var(--border);display:block}
+  .tl-title{font-family:var(--mono);font-size:12px;color:var(--dim);margin-left:6px}
+
+  /* terminal */
+  .term{font-family:var(--mono);font-size:13px;line-height:1.7;padding:18px 18px 22px;
+    color:var(--text);overflow-x:auto;background:
+      linear-gradient(180deg,rgba(217,119,87,.03),transparent 30%),var(--bg)}
+  .term pre{margin:0;white-space:pre;color:var(--ember);opacity:.92;font-size:12px;line-height:1.35}
+  .term .cmd{color:var(--text)}
+  .term .cmd .p{color:var(--ember)}
+  .term .row{display:flex;gap:14px}
+  .term .k{color:var(--muted);min-width:148px;display:inline-block}
+  .term .warnv{color:var(--ember)}
+  .term .ok{color:var(--frost)}
+  .term .cur{display:inline-block;width:8px;height:15px;background:var(--ember);
+    vertical-align:-2px;animation:blink 1.1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .term .sl{color:var(--dim)}
+
+  /* app window */
+  .app{display:grid;grid-template-columns:172px 1fr;min-height:340px;background:var(--bg)}
+  @media(max-width:640px){.app{grid-template-columns:54px 1fr}}
+  .app-side{background:var(--surface);border-right:1px solid var(--border);padding:14px 10px;display:flex;flex-direction:column;gap:3px}
+  .app-side .sb-brand{display:flex;align-items:center;gap:9px;padding:6px 8px 14px}
+  .app-side .sb-brand svg{width:20px;height:20px}
+  .app-side .sb-brand b{font-weight:600;letter-spacing:.26em;font-size:12px}
+  @media(max-width:640px){.app-side .sb-brand b,.navi span{display:none}}
+  .navi{display:flex;align-items:center;gap:10px;padding:8px 9px;border-radius:8px;color:var(--muted);
+    font-size:13.5px;cursor:default}
+  .navi svg{width:15px;height:15px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6}
+  .navi.on{background:var(--ember-soft);color:var(--text)}
+  .navi.on svg{stroke:var(--ember)}
+  .navi .badge{margin-left:auto;font-family:var(--mono);font-size:10px;background:var(--surface-2);
+    border:1px solid var(--border);border-radius:6px;padding:1px 6px;color:var(--ember)}
+  @media(max-width:640px){.navi .badge{display:none}}
+  .app-main{padding:18px 20px;overflow:hidden}
+  .app-main .mh{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px}
+  .app-main h4{font-size:16px;font-weight:600}
+  .app-main .mh .meta{font-family:var(--mono);font-size:11px;color:var(--dim)}
+  .app-main .sub2{color:var(--muted);font-size:12.5px;margin-bottom:16px}
+  .tcard{border:1px solid var(--border);background:var(--surface);border-radius:11px;padding:13px 14px;margin-bottom:10px}
+  .tcard .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .tcard .nm{font-weight:600;font-size:14px}
+  .tcard .root{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:3px}
+  .tcard .crew{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:9px;display:flex;gap:7px;flex-wrap:wrap}
+  .tcard .crew b{color:var(--frost);font-weight:500}
+  .chip{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+    padding:3px 9px;border-radius:999px;border:1px solid var(--border);white-space:nowrap}
+  .chip.active{color:var(--ember);border-color:var(--ember-line);background:var(--ember-soft)}
+  .chip.cooled{color:var(--frost);border-color:rgba(125,168,184,.3)}
+  .chip.idle{color:var(--dim)}
+  .chip .d{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;vertical-align:1px;background:currentColor}
+  .chip.active .d{animation:ping 2.4s infinite}
+
+  /* ── features grid ───────────────────────────────── */
+  .feat{display:grid;gap:14px;grid-template-columns:1fr}
+  @media(min-width:640px){.feat{grid-template-columns:repeat(2,1fr)}}
+  @media(min-width:920px){.feat{grid-template-columns:repeat(3,1fr)}}
+  .card{border:1px solid var(--border);background:var(--surface);border-radius:14px;padding:22px;
+    transition:border-color .25s,transform .25s}
+  .card:hover{border-color:var(--ember-line);transform:translateY(-2px)}
+  .card .ic{width:34px;height:34px;border-radius:9px;background:var(--ember-soft);
+    display:flex;align-items:center;justify-content:center;margin-bottom:14px;border:1px solid var(--ember-line)}
+  .card .ic svg{width:18px;height:18px;stroke:var(--ember);fill:none;stroke-width:1.7}
+  .card h3{font-size:16.5px;font-weight:600;margin-bottom:7px}
+  .card p{color:var(--muted);font-size:14px}
+  .card code{font-family:var(--mono);font-size:12.5px;color:var(--frost);background:var(--surface-2);
+    padding:1px 6px;border-radius:5px}
+
+  /* ── lifecycle motif ─────────────────────────────── */
+  .life{border:1px solid var(--border);border-radius:16px;background:
+      linear-gradient(120deg,var(--surface),var(--bg));padding:30px 24px;text-align:center}
+  .life .track{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin-top:18px}
+  .lstate{display:flex;flex-direction:column;align-items:center;gap:9px;min-width:84px}
+  .ldia{width:26px;height:26px}
+  .lstate .lb{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .arr{color:var(--dim);font-family:var(--mono);align-self:flex-start;margin-top:6px}
+  @media(max-width:560px){.arr{display:none}.life .track{gap:16px}}
+
+  /* ── footer ──────────────────────────────────────── */
+  footer{border-top:1px solid var(--border);padding:40px 0 56px;margin-top:30px}
+  .foot{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  .foot .l{display:flex;align-items:center;gap:11px}
+  .foot .l svg{width:22px;height:22px}
+  .foot .l b{font-weight:600;letter-spacing:.28em;font-size:13px}
+  .foot .meta{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-align:right;line-height:1.8}
+  .foot .meta .ststrip{color:var(--muted)}
+  .foot .meta .ststrip .e{color:var(--ember)}
+
+  /* gentle scroll-reveal — gated behind .js so content is NEVER hidden without JS,
+     with a failsafe (below) that reveals everything regardless. */
+  .js .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}
+  .reveal.in{opacity:1!important;transform:none!important}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.js .reveal{opacity:1;transform:none}}
+</style>
+<script>document.documentElement.classList.add('js')</script>
+</head>
+<body>
+
+<!-- reusable mark symbols -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <mask id="hc"><rect width="100" height="100" fill="#fff"/>
+      <path d="M 50 78 L 50 56 M 50 56 L 36 48 L 46 38 L 34 30 M 50 56 L 64 48 L 54 38 L 66 30"
+        stroke="#000" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></mask>
+    <symbol id="mark" viewBox="0 0 100 100"><path d="M 50 15 L 85 50 L 50 85 L 15 50 Z" mask="url(#hc)"/></symbol>
+  </defs>
+</svg>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top">
+      <svg class="mk" viewBox="0 0 100 100"><use href="#mark" fill="#FAF9F5"/></svg>
+      <span class="wordmark">HE<span class="ember">A</span>RTH</span>
+    </a>
+    <span class="nav-tag">multi-agent orchestration · v0.1.0</span>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="wrap">
+      <div class="mark-xl"><svg viewBox="0 0 100 100"><use href="#mark" fill="#FAF9F5"/></svg></div>
+      <h1 class="word">HE<span class="a">A</span>RTH</h1>
+      <p class="lede">Your coding session becomes a project manager.</p>
+      <p class="sub">It dispatches specialist agent crews to do real software work — implementation, review, verification — coordinated through durable file-based state, with human-in-the-loop gates where it matters.</p>
+      <div class="pills">
+        <span class="pill"><span class="dot"></span>framework</span>
+        <span class="pill active"><span class="dot"></span>desktop app</span>
+        <span class="pill"><span class="dot"></span>CLI</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <section class="reveal">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">the idea</span>
+        <h2>One session orchestrates. Many agents build.</h2>
+        <p>The main thread never writes code. It reads the work, dispatches crews, supervises iterations, and surfaces a decision only when one is genuinely needed.</p>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="n">01</div><h3>The session is the PM</h3><p>Your main thread runs the loop: brief a crew, dispatch specialist personas, gate the result. It coordinates — it doesn't implement.</p></div>
+        <div class="step"><div class="n">02</div><h3>Crews do the work</h3><p>Builders, reviewers, verifiers — each a focused persona with its own tools and context, run in parallel and held to acceptance criteria.</p></div>
+        <div class="step"><div class="n">03</div><h3>State lives on disk</h3><p>Every event, command, decision, and crew artifact is a file. The work survives context resets — and the companion app reads the same files, no IPC.</p></div>
+        <div class="step"><div class="n">04</div><h3>You hold the gates</h3><p>Ambiguous calls become explicit human checkpoints. Everything else runs autonomously until there's a real decision to make.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TERMINAL PREVIEW -->
+  <section class="reveal">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">the cli</span>
+        <h2>Drive it from the terminal.</h2>
+        <p>One binary over the same file-based state — check status, dispatch, tail crews, manage topics.</p>
+      </div>
+      <div class="frame">
+        <div class="titlebar"><div class="tl-dots"><i></i><i></i><i></i></div><span class="tl-title">~/work — hearth</span></div>
+        <div class="term">
+<pre>    ╱╲
+   ╱▴▴╲           H  E  A  R  T  H
+   ╲▾▾╱           ────────────────
+    ╲╱            multi-agent orchestration framework</pre>
+          <div class="cmd"><span class="p">❯</span> hearth status</div>
+          <div style="height:8px"></div>
+          <div class="row"><span class="k">topics</span><span>2 active / 3 total</span></div>
+          <div class="row"><span class="k">pending events</span><span class="warnv">2</span></div>
+          <div class="row"><span class="k">open escalations</span><span>0 <span class="sl">(0 aging)</span></span></div>
+          <div class="row"><span class="k">triage awaiting</span><span>0</span></div>
+          <div style="height:12px"></div>
+          <div class="sl">active topics</div>
+          <div class="row"><span class="k">◆ checkout-redesign</span><span class="warnv">active</span> <span class="sl">· crew: 3 building</span></div>
+          <div class="row"><span class="k">◇ cookies-shrink-fix</span><span class="ok">cooled</span> <span class="sl">· 2/3 verified</span></div>
+          <div style="height:10px"></div>
+          <div class="cmd"><span class="p">❯</span> <span class="cur"></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- APP PREVIEW -->
+  <section class="reveal">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">the app</span>
+        <h2>Or watch the whole forge at a glance.</h2>
+        <p>A desktop control plane over the same state — topics, crews, the inbox of decisions waiting on you, and per-repo adapters.</p>
+      </div>
+      <div class="frame">
+        <div class="titlebar"><div class="tl-dots"><i></i><i></i><i></i></div><span class="tl-title">Hearth</span></div>
+        <div class="app">
+          <aside class="app-side">
+            <div class="sb-brand"><svg viewBox="0 0 100 100"><use href="#mark" fill="#FAF9F5"/></svg><b>HE<span class="ember">A</span>RTH</b></div>
+            <div class="navi"><svg viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h12"/></svg><span>Inbox</span><span class="badge">2</span></div>
+            <div class="navi"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16"/></svg><span>Backlog</span></div>
+            <div class="navi on"><svg viewBox="0 0 24 24"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="17" r="3"/><path d="M7 10v4a3 3 0 0 0 3 3h4"/></svg><span>Topics</span></div>
+            <div class="navi"><svg viewBox="0 0 24 24"><path d="M9 3v6l-3 3 3 3v6M15 3v6l3 3-3 3v6"/></svg><span>Adapters</span></div>
+            <div class="navi"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Feed</span></div>
+          </aside>
+          <div class="app-main">
+            <div class="mh"><h4>Topics</h4><span class="meta">2 active · 3 total</span></div>
+            <div class="sub2">one topic = one repo = one worktree = one PM session</div>
+
+            <div class="tcard">
+              <div class="top"><div><div class="nm">checkout-redesign</div><div class="root">~/work/storefront · ISSUE-1842</div></div>
+                <span class="chip active"><span class="d"></span>active</span></div>
+              <div class="crew"><span>crew</span><b>SoftwareDeveloper</b><b>QaTester</b><b>UxDesigner</b><span class="sl">· iter 2/3</span></div>
+            </div>
+
+            <div class="tcard">
+              <div class="top"><div><div class="nm">cookies-shrink-fix</div><div class="root">~/work/storefront · ISSUE-1723</div></div>
+                <span class="chip cooled"><span class="d"></span>cooled</span></div>
+              <div class="crew"><span>verified</span><b>2 / 3 gates</b><span class="sl">· ready for review</span></div>
+            </div>
+
+            <div class="tcard">
+              <div class="top"><div><div class="nm">api-pagination</div><div class="root">~/work/backend · queued</div></div>
+                <span class="chip idle"><span class="d"></span>idle</span></div>
+              <div class="crew"><span>adapter</span><b>.claude/hearth/</b><span class="sl">· dispatch on accept</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="reveal">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">what's inside</span>
+        <h2>Built for real, repo-aware work.</h2>
+      </div>
+      <div class="feat">
+        <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg></div>
+          <h3>Topics & worktrees</h3><p>Each piece of work is an isolated git worktree with its own branch, state, and PM session. No crossed wires.</p></div>
+        <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="12" cy="18" r="3"/><path d="M6 9v3h12V9M12 12v3"/></svg></div>
+          <h3>Crews & personas</h3><p>Builders, reviewers, verifiers, architects — specialist agents with scoped tools, dispatched in parallel and held to acceptance criteria.</p></div>
+        <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M9 3v6l-3 3 3 3v6M15 3v6l3 3-3 3v6"/></svg></div>
+          <h3>Repo adapters</h3><p>Drop a <code>.claude/hearth/</code> overlay in any repo — MR conventions, dev-server, integrations, skills. Or let an agent draft it for you.</p></div>
+        <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg></div>
+          <h3>Intake & triage</h3><p>Optional sources (like Notion) feed a backlog. Each ticket is triaged — complexity, suggested crew, risk flags — for you to accept.</p></div>
+        <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="19" cy="18" r="2"/></svg></div>
+          <h3>Unified feed</h3><p>Events, decisions, snapshots, and chat on one timeline per topic. Take over the terminal, request changes, sign off — all in one place.</p></div>
+        <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 2l3 5 6 .5-4.5 4 1.5 6L12 14l-6 3.5 1.5-6L3 7.5 9 7z"/></svg></div>
+          <h3>App · CLI · MCP</h3><p>Same file-based state, three surfaces. The desktop app for oversight, the CLI for speed, and an MCP server exposing it all to any Claude Code session.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIFECYCLE -->
+  <section class="reveal">
+    <div class="wrap">
+      <div class="life">
+        <span class="eyebrow" style="justify-content:center">the lifecycle</span>
+        <h2 style="font-size:clamp(22px,4.5vw,30px);font-weight:600;margin-top:12px">Every topic moves through the fire.</h2>
+        <div class="track">
+          <div class="lstate"><svg class="ldia" viewBox="0 0 100 100"><use href="#mark" fill="#6A6A66"/></svg><span class="lb">idle</span></div>
+          <span class="arr">→</span>
+          <div class="lstate"><svg class="ldia" viewBox="0 0 100 100"><use href="#mark" fill="#D97757"/></svg><span class="lb" style="color:var(--ember)">active</span></div>
+          <span class="arr">→</span>
+          <div class="lstate"><svg class="ldia" viewBox="0 0 100 100"><use href="#mark" fill="#7DA8B8"/></svg><span class="lb" style="color:var(--frost)">cooled</span></div>
+          <span class="arr">→</span>
+          <div class="lstate"><svg class="ldia" viewBox="0 0 100 100"><use href="#mark" fill="#FAF9F5"/></svg><span class="lb">quenched</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <div class="l"><svg viewBox="0 0 100 100"><use href="#mark" fill="#FAF9F5"/></svg><b>HE<span class="ember">A</span>RTH</b></div>
+    <div class="meta">
+      <div class="ststrip"><span class="e">idle</span> · <span class="e">active</span> · cooled · quenched</div>
+      <div>multi-agent orchestration framework · v0.1.0</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // gentle scroll reveals — with a hard failsafe so a section is NEVER left hidden
+  const reveal=el=>el.classList.add('in');
+  const els=[...document.querySelectorAll('.reveal')];
+  const io=new IntersectionObserver((es)=>es.forEach(e=>{if(e.isIntersecting){reveal(e.target);io.unobserve(e.target)}}),{rootMargin:'0px 0px -8% 0px',threshold:.05});
+  els.forEach(el=>io.observe(el));
+  setTimeout(()=>els.forEach(reveal),2000); // failsafe: slow/odd browsers, no-scroll, screenshots
+</script>
+</body>
+</html>
