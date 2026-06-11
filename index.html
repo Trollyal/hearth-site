@@ -4,9 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Hearth — multi-agent orchestration framework</title>
-<meta name="description" content="Hearth turns your main coding session into a project manager that dispatches specialist agent crews to do real software work — coordinated through durable file-based state, with human-in-the-loop gates. Framework, desktop app, and CLI." />
-<meta property="og:title" content="Hearth — multi-agent orchestration" />
-<meta property="og:description" content="Your session becomes a PM. It dispatches specialist crews, coordinated through durable file-based state. Framework · app · CLI." />
+<meta name="description" content="Hearth turns your main coding session into a project manager. You compose the work as a flow — build, verify, audit, gate — and Hearth's executor runs it on a live canvas, coordinated through durable file-based state with human gates. Framework, desktop app, and CLI. Now v1.0." />
+<meta property="og:title" content="Hearth v1.0 — multi-agent orchestration" />
+<meta property="og:description" content="Compose the work as a flow; Hearth's executor runs it on a live canvas. Durable file-based state, human gates. Framework · app · CLI." />
 <meta property="og:type" content="website" />
 <meta name="theme-color" content="#0E0E0D" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -81,6 +81,14 @@
     animation:rise .9s .12s cubic-bezier(.2,.7,.2,1) both}
   .sub{font-size:clamp(15px,2.6vw,17px);max-width:620px;margin:0 auto 30px;color:var(--muted);
     animation:rise .9s .18s cubic-bezier(.2,.7,.2,1) both}
+  .relflag{display:inline-flex;align-items:center;gap:9px;margin-bottom:26px;
+    font-family:var(--mono);font-size:12.5px;border:1px solid var(--ember-line);
+    background:var(--ember-soft);color:var(--text);padding:7px 15px;border-radius:999px;
+    animation:rise .9s both;transition:border-color .25s}
+  .relflag:hover{border-color:var(--ember)}
+  .relflag b{color:var(--ember);font-weight:600}
+  .relflag .rdot{width:7px;height:7px;border-radius:50%;background:var(--ember);animation:ping 2.4s infinite}
+  .relflag .rarr{color:var(--ember)}
   .pills{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;
     animation:rise .9s .24s cubic-bezier(.2,.7,.2,1) both}
   .pill{font-family:var(--mono);font-size:13px;border:1px solid var(--border);
@@ -271,7 +279,7 @@
       <svg class="mk" viewBox="0 0 100 100"><use href="#mark" fill="#FAF9F5"/></svg>
       <span class="wordmark">HE<span class="ember">A</span>RTH</span>
     </a>
-    <span class="nav-tag">multi-agent orchestration · v0.1.0</span>
+    <span class="nav-tag">multi-agent orchestration · v1.0.0</span>
   </div>
 </header>
 
@@ -280,10 +288,13 @@
   <!-- HERO -->
   <div class="hero">
     <div class="wrap">
+      <a class="relflag" href="https://github.com/Trollyal/hearth-app/releases/latest" target="_blank" rel="noopener">
+        <span class="rdot"></span> Hearth <b>v1.0</b> is here — the app runs the work now <span class="rarr">→</span>
+      </a>
       <div class="mark-xl"><svg viewBox="0 0 100 100"><use href="#mark" fill="#FAF9F5"/></svg></div>
       <h1 class="word">HE<span class="a">A</span>RTH</h1>
       <p class="lede">Your coding session becomes a project manager.</p>
-      <p class="sub">It dispatches specialist agent crews to do real software work — implementation, review, verification — coordinated through durable file-based state, with human-in-the-loop gates where it matters.</p>
+      <p class="sub">You compose the work as a <span class="ember">flow</span> — build, verify, audit, gate — and Hearth's executor runs it for you, step by step, on a live canvas. All coordinated through durable file-based state, with human gates where they matter.</p>
       <div class="pills">
         <span class="pill"><span class="dot"></span>framework</span>
         <span class="pill active"><span class="dot"></span>desktop app</span>
@@ -297,15 +308,38 @@
     <div class="wrap">
       <div class="sec-head">
         <span class="eyebrow">the idea</span>
-        <h2>One session orchestrates. Many agents build.</h2>
-        <p>The main thread never writes code. It reads the work, dispatches crews, supervises iterations, and surfaces a decision only when one is genuinely needed.</p>
+        <h2>One session orchestrates. The app runs the work.</h2>
+        <p>The main thread never writes code. It reads the work, composes it as a flow, fires it, and surfaces a decision only when one is genuinely needed.</p>
       </div>
       <div class="steps">
-        <div class="step"><div class="n">01</div><h3>The session is the PM</h3><p>Your main thread runs the loop: brief a crew, dispatch specialist personas, gate the result. It coordinates — it doesn't implement.</p></div>
-        <div class="step"><div class="n">02</div><h3>Crews do the work</h3><p>Builders, reviewers, verifiers — each a focused persona with its own tools and context, run in parallel and held to acceptance criteria.</p></div>
-        <div class="step"><div class="n">03</div><h3>State lives on disk</h3><p>Every event, command, decision, and crew artifact is a file. The work survives context resets — and the companion app reads the same files, no IPC.</p></div>
+        <div class="step"><div class="n">01</div><h3>The session is the PM</h3><p>Your main thread composes the work as a flow and fires it, then supervises and gates the result. It coordinates — it never writes code.</p></div>
+        <div class="step"><div class="n">02</div><h3>The executor runs the loop</h3><p>Build → verify, looping on FAIL with findings carried forward; parallel assessors fanning into a synthesis; branches and gates. Deterministic orchestration, not a prompt guessing what happened.</p></div>
+        <div class="step"><div class="n">03</div><h3>State lives on disk</h3><p>Every event, command, decision, and run record is a file. The work survives context resets — and the companion app reads the same files, no IPC.</p></div>
         <div class="step"><div class="n">04</div><h3>You hold the gates</h3><p>Ambiguous calls become explicit human checkpoints. Everything else runs autonomously until there's a real decision to make.</p></div>
       </div>
+    </div>
+  </section>
+
+  <!-- FLOWS (v1) -->
+  <section class="reveal">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">new in v1</span>
+        <h2>Design the work as a flow.</h2>
+        <p>Compose a graph — build, verify, audit, parallel assessors, human gates — by hand on the canvas, or describe the task in a sentence and let the planner draft it. Fire it, and the executor walks the graph: build→verify loops carrying findings forward, fan-ins, branches, gates — committing on green. Every node lights up live.</p>
+      </div>
+      <div class="flow">
+        <div class="fnode"><span class="fi">✦</span><b>Plan / author</b><i>canvas · or plan with AI</i></div>
+        <span class="fconn"></span>
+        <div class="fnode"><span class="fi">⚒</span><b>Build</b><i>SoftwareDeveloper</i></div>
+        <span class="fconn"></span>
+        <div class="fnode"><span class="fi">✓</span><b>Verify</b><i>QaTester · loops on FAIL</i></div>
+        <span class="fconn"></span>
+        <div class="fnode gate"><span class="fi">✋</span><b>Gate</b><i>ship review</i></div>
+        <span class="fconn"></span>
+        <div class="fnode"><span class="fi">◆</span><b>Run record</b><i>status · provenance</i></div>
+      </div>
+      <p class="muted" style="font-size:13px;margin-top:16px;text-align:center;max-width:680px;margin-left:auto;margin-right:auto">The executor shells one agent per node under an enforced output contract — no stdout-sniffing. Every read &amp; write is attributed to its repo; a write to a read-only mount is flagged loudly.</p>
     </div>
   </section>
 
@@ -362,7 +396,7 @@
           </aside>
           <div class="app-main">
             <div class="mh"><h4>Topics</h4><span class="meta">2 active · 3 total</span></div>
-            <div class="sub2">one topic = one repo = one worktree = one PM session</div>
+            <div class="sub2">a topic binds one repo, several, or none — each read-only or read-write</div>
 
             <div class="tcard">
               <div class="top"><div><div class="nm">checkout-redesign</div><div class="root">~/work/storefront · ISSUE-1842</div></div>
@@ -434,8 +468,10 @@
         <h2>Built for real, repo-aware work.</h2>
       </div>
       <div class="feat">
+        <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.3"/><circle cx="6" cy="18" r="2.3"/><circle cx="18" cy="12" r="2.3"/><path d="M8.3 6.9 15.7 11M8.3 17.1 15.7 13"/></svg></div>
+          <h3>Flows & the run canvas</h3><p>Author the graph the executor runs — build/verify loops, audits, gates — on a canvas, or let the planner draft it. Watch runs light up node by node, with full read/write provenance.</p></div>
         <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg></div>
-          <h3>Topics & worktrees</h3><p>Each piece of work is an isolated git worktree with its own branch, state, and PM session. No crossed wires.</p></div>
+          <h3>Topics & mounts</h3><p>A topic binds one or more repos — each read-only or read-write — or none at all for research and automation. Isolated worktrees, branch, and state. No crossed wires.</p></div>
         <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="12" cy="18" r="3"/><path d="M6 9v3h12V9M12 12v3"/></svg></div>
           <h3>Crews & personas</h3><p>Builders, reviewers, verifiers, architects — specialist agents with scoped tools, dispatched in parallel and held to acceptance criteria.</p></div>
         <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M9 3v6l-3 3 3 3v6M15 3v6l3 3-3 3v6"/></svg></div>
@@ -443,7 +479,7 @@
         <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg></div>
           <h3>Intake & triage</h3><p>Optional sources (like Notion) feed a backlog. Each ticket is triaged — complexity, suggested crew, risk flags — for you to accept.</p></div>
         <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="19" cy="18" r="2"/></svg></div>
-          <h3>Unified feed</h3><p>Events, decisions, snapshots, and chat on one timeline per topic. Take over the terminal, request changes, sign off — all in one place.</p></div>
+          <h3>The feed rail</h3><p>Events, decisions, gates, and chat on one timeline — the conversation rail beside the live run canvas. Take over the terminal, request changes, sign off — all in one place.</p></div>
         <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 2l3 5 6 .5-4.5 4 1.5 6L12 14l-6 3.5 1.5-6L3 7.5 9 7z"/></svg></div>
           <h3>App · CLI · MCP</h3><p>Same file-based state, three surfaces. The desktop app for oversight, the CLI for speed, and an MCP server exposing it all to any Claude Code session.</p></div>
         <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></div>
@@ -482,7 +518,7 @@
     <div class="l"><svg viewBox="0 0 100 100"><use href="#mark" fill="#FAF9F5"/></svg><b>HE<span class="ember">A</span>RTH</b></div>
     <div class="meta">
       <div class="ststrip"><span class="e">idle</span> · <span class="e">active</span> · cooled · quenched</div>
-      <div>multi-agent orchestration framework · v0.1.0</div>
+      <div>multi-agent orchestration framework · v1.0.0</div>
     </div>
   </div>
 </footer>
