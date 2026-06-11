@@ -3,275 +3,347 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Hearth — multi-agent orchestration framework</title>
-<meta name="description" content="Hearth turns your main coding session into a project manager. You compose the work as a flow — build, verify, audit, gate — and Hearth's executor runs it on a live canvas, coordinated through durable file-based state with human gates. Framework, desktop app, and CLI. Now v1.0." />
-<meta property="og:title" content="Hearth v1.0 — multi-agent orchestration" />
-<meta property="og:description" content="Compose the work as a flow; Hearth's executor runs it on a live canvas. Durable file-based state, human gates. Framework · app · CLI." />
+<title>Hearth — compose the work as a flow, the app runs it</title>
+<meta name="description" content="Hearth turns your coding session into a project manager. You design the build → verify → gate graph; the executor walks it on a live canvas — looping on failure, fanning out in parallel, pausing only at the gates you set. Framework, desktop app, and CLI over one durable file-based state. v1.0." />
+<meta property="og:title" content="Hearth v1.0 — app-as-orchestrator" />
+<meta property="og:description" content="Compose the work as a flow; Hearth's executor runs it on a live canvas. Build→verify loops, parallel fan-in, human gates. Framework · app · CLI." />
 <meta property="og:type" content="website" />
 <meta name="theme-color" content="#0E0E0D" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Crect%20width='100'%20height='100'%20rx='20'%20fill='%230E0E0D'/%3E%3Cpath%20d='M50%2018%20L82%2050%20L50%2082%20L18%2050%20Z'%20fill='none'%20stroke='%23D97757'%20stroke-width='5'/%3E%3Cpath%20d='M50%2074%20L50%2054%20M50%2054%20L37%2047%20L46%2038%20L35%2031%20M50%2054%20L63%2047%20L54%2038%20L65%2031'%20fill='none'%20stroke='%23D97757'%20stroke-width='5'%20stroke-linecap='round'%20stroke-linejoin='round'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <style>
   :root{
     --bg:#0E0E0D; --surface:#141413; --surface-2:#1C1C1A; --border:#2A2A28;
     --text:#FAF9F5; --muted:#B0AEA5; --dim:#6A6A66;
-    --ember:#D97757; --ember-soft:rgba(217,119,87,.14); --ember-line:rgba(217,119,87,.32);
-    --frost:#7DA8B8;
+    --ember:#D97757; --ember-bright:#FFD0AC; --ember-soft:rgba(217,119,87,.14); --ember-line:rgba(217,119,87,.32);
+    --frost:#7DA8B8; --frost-soft:rgba(125,168,184,.12); --frost-line:rgba(125,168,184,.34);
+    --ok:#7faf6f; --warn:#d6c068; --err:#c44a4a;
     --sans:"Geist","Inter",system-ui,-apple-system,sans-serif;
     --mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,monospace;
-    --maxw:1080px;
+    --maxw:1140px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
   body{
     background:var(--bg); color:var(--text); font-family:var(--sans);
-    line-height:1.55; font-size:16px; letter-spacing:-.01em;
+    line-height:1.55; font-size:16px; letter-spacing:-.011em;
     overflow-x:hidden;
-    /* atmosphere: ember hearth-glow from top, settling into dark */
     background-image:
-      radial-gradient(120% 90% at 50% -10%, rgba(217,119,87,.10), transparent 55%),
-      radial-gradient(80% 60% at 85% 8%, rgba(125,168,184,.05), transparent 60%);
+      radial-gradient(125% 85% at 50% -8%, rgba(217,119,87,.13), transparent 52%),
+      radial-gradient(70% 55% at 88% 6%, rgba(125,168,184,.06), transparent 60%),
+      radial-gradient(60% 50% at 10% 18%, rgba(217,119,87,.04), transparent 60%);
     background-attachment:fixed;
   }
-  /* fine grain overlay for texture */
+  /* fine grain overlay */
   body::before{
-    content:""; position:fixed; inset:0; pointer-events:none; z-index:1; opacity:.025;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:1; opacity:.03;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
-  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px;position:relative;z-index:2}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px;position:relative;z-index:2}
   a{color:inherit;text-decoration:none}
   ::selection{background:var(--ember-soft);color:var(--text)}
 
   /* ── tokens ───────────────────────────────────────── */
   .mono{font-family:var(--mono)}
-  .ember{color:var(--ember)}
-  .frost{color:var(--frost)}
-  .muted{color:var(--muted)}
-  .eyebrow{
-    font-family:var(--mono); font-size:12px; letter-spacing:.22em; text-transform:uppercase;
-    color:var(--ember); display:inline-flex; align-items:center; gap:9px;
-  }
-  .eyebrow::before{content:"";width:18px;height:1px;background:var(--ember-line)}
+  .ember{color:var(--ember)} .frost{color:var(--frost)} .muted{color:var(--muted)}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.24em;text-transform:uppercase;
+    color:var(--ember);display:inline-flex;align-items:center;gap:9px}
+  .eyebrow::before{content:"";width:20px;height:1px;background:var(--ember-line)}
+  .eyebrow.ctr{justify-content:center}.eyebrow.ctr::after{content:"";width:20px;height:1px;background:var(--ember-line)}
 
-  /* ── nav ─────────────────────────────────────────── */
-  header.nav{position:sticky;top:0;z-index:20;backdrop-filter:blur(10px);
-    background:rgba(14,14,13,.72);border-bottom:1px solid var(--border)}
-  .nav-in{display:flex;align-items:center;justify-content:space-between;height:58px}
+  /* ── nav ──────────────────────────────────────────── */
+  header.nav{position:sticky;top:0;z-index:40;backdrop-filter:blur(12px);
+    background:rgba(14,14,13,.74);border-bottom:1px solid var(--border)}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:60px}
   .brand{display:flex;align-items:center;gap:11px;font-weight:600}
-  .brand .mk{width:24px;height:24px;display:block}
+  .brand .mk{width:25px;height:25px;display:block}
   .wordmark{font-weight:600;letter-spacing:.34em;font-size:14px;padding-left:.34em}
-  .nav-tag{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.04em}
-  @media(max-width:560px){.nav-tag{display:none}}
+  .nav-r{display:flex;align-items:center;gap:20px}
+  .nav-link{font-size:13.5px;color:var(--muted);transition:color .2s}
+  .nav-link:hover{color:var(--text)}
+  @media(max-width:620px){.nav-link.hideable{display:none}}
+  .nav-cta{font-family:var(--mono);font-size:12.5px;border:1px solid var(--ember-line);background:var(--ember-soft);
+    color:var(--text);padding:7px 14px;border-radius:8px;transition:border-color .2s,background .2s}
+  .nav-cta:hover{border-color:var(--ember);background:rgba(217,119,87,.2)}
 
-  /* ── hero ────────────────────────────────────────── */
-  .hero{padding:78px 0 64px;text-align:center;position:relative}
-  .mark-xl{width:118px;height:118px;margin:0 auto 30px;position:relative;
-    animation:rise .9s cubic-bezier(.2,.7,.2,1) both}
-  .mark-xl svg{width:100%;height:100%;position:relative;z-index:2}
-  .mark-xl::after{content:"";position:absolute;inset:-46%;z-index:1;border-radius:50%;
-    background:radial-gradient(circle,rgba(217,119,87,.34),transparent 66%);
-    filter:blur(8px);animation:emberpulse 4.6s ease-in-out infinite}
-  @keyframes emberpulse{0%,100%{opacity:.5;transform:scale(.94)}50%{opacity:1;transform:scale(1.06)}}
+  /* ── buttons ──────────────────────────────────────── */
+  .btn{display:inline-flex;align-items:center;gap:9px;font-size:14.5px;font-weight:600;border-radius:11px;
+    padding:13px 22px;transition:transform .14s,box-shadow .25s,border-color .2s,background .2s;cursor:pointer;border:1px solid transparent}
+  .btn:active{transform:scale(.97)}
+  .btn-prim{background:var(--ember);color:#1c1009;box-shadow:0 0 0 0 rgba(217,119,87,.5),0 14px 34px -14px rgba(217,119,87,.7)}
+  .btn-prim:hover{box-shadow:0 0 30px -6px rgba(217,119,87,.55),0 14px 34px -12px rgba(217,119,87,.7)}
+  .btn-ghost{border-color:var(--border);background:var(--surface);color:var(--text)}
+  .btn-ghost:hover{border-color:var(--ember-line)}
+  .btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8}
 
-  h1.word{font-size:clamp(54px,15vw,116px);font-weight:600;letter-spacing:.12em;
-    line-height:.9;margin-bottom:22px;animation:rise .9s .06s cubic-bezier(.2,.7,.2,1) both}
-  h1.word .a{color:var(--ember);text-shadow:0 0 34px rgba(217,119,87,.5)}
-  .lede{font-size:clamp(18px,3.4vw,23px);max-width:660px;margin:0 auto 14px;color:var(--text);
-    animation:rise .9s .12s cubic-bezier(.2,.7,.2,1) both}
-  .sub{font-size:clamp(15px,2.6vw,17px);max-width:620px;margin:0 auto 30px;color:var(--muted);
-    animation:rise .9s .18s cubic-bezier(.2,.7,.2,1) both}
-  .relflag{display:inline-flex;align-items:center;gap:9px;margin-bottom:26px;
+  /* ── hero ─────────────────────────────────────────── */
+  .hero{padding:62px 0 30px;text-align:center;position:relative}
+  .relflag{display:inline-flex;align-items:center;gap:9px;margin-bottom:30px;
     font-family:var(--mono);font-size:12.5px;border:1px solid var(--ember-line);
-    background:var(--ember-soft);color:var(--text);padding:7px 15px;border-radius:999px;
+    background:var(--ember-soft);color:var(--text);padding:7px 16px;border-radius:999px;
     animation:rise .9s both;transition:border-color .25s}
   .relflag:hover{border-color:var(--ember)}
   .relflag b{color:var(--ember);font-weight:600}
   .relflag .rdot{width:7px;height:7px;border-radius:50%;background:var(--ember);animation:ping 2.4s infinite}
   .relflag .rarr{color:var(--ember)}
-  .pills{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;
-    animation:rise .9s .24s cubic-bezier(.2,.7,.2,1) both}
-  .pill{font-family:var(--mono);font-size:13px;border:1px solid var(--border);
-    background:var(--surface);padding:8px 15px;border-radius:999px;color:var(--muted);
-    display:inline-flex;align-items:center;gap:8px}
-  .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--ember)}
-  .pill.active .dot{box-shadow:0 0 0 0 rgba(217,119,87,.6);animation:ping 2.4s infinite}
+  .mark-xl{width:92px;height:92px;margin:0 auto 26px;position:relative;animation:rise .9s cubic-bezier(.2,.7,.2,1) both}
+  .mark-xl svg{width:100%;height:100%;position:relative;z-index:2;animation:breath 4.2s ease-in-out infinite}
+  .mark-xl::after{content:"";position:absolute;inset:-52%;z-index:1;border-radius:50%;
+    background:radial-gradient(circle,rgba(217,119,87,.36),transparent 64%);filter:blur(7px);animation:halo 3.6s ease-in-out infinite}
+  @keyframes halo{0%,100%{opacity:.45;transform:scale(.9)}50%{opacity:1;transform:scale(1.12)}}
+  @keyframes breath{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
+
+  h1.head{font-size:clamp(40px,7.4vw,74px);font-weight:700;letter-spacing:-.035em;line-height:1.02;
+    margin:0 auto 22px;max-width:14ch;animation:rise .9s .06s cubic-bezier(.2,.7,.2,1) both}
+  h1.head .a{color:var(--ember);text-shadow:0 0 42px rgba(217,119,87,.46)}
+  .lede{font-size:clamp(16px,2.5vw,19px);max-width:680px;margin:0 auto 32px;color:var(--muted);
+    animation:rise .9s .14s cubic-bezier(.2,.7,.2,1) both}
+  .lede b{color:var(--text);font-weight:500}
+  .cta-row{display:flex;gap:13px;justify-content:center;flex-wrap:wrap;margin-bottom:24px;
+    animation:rise .9s .2s cubic-bezier(.2,.7,.2,1) both}
+  .pills{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;animation:rise .9s .26s cubic-bezier(.2,.7,.2,1) both}
+  .pill{font-family:var(--mono);font-size:12.5px;border:1px solid var(--border);background:var(--surface);
+    padding:7px 14px;border-radius:999px;color:var(--muted);display:inline-flex;align-items:center;gap:8px}
+  .pill .dot{width:6px;height:6px;border-radius:50%;background:var(--dim)}
+  .pill.active{color:var(--text);border-color:var(--ember-line)}
+  .pill.active .dot{background:var(--ember);box-shadow:0 0 0 0 rgba(217,119,87,.6);animation:ping 2.4s infinite}
   @keyframes ping{0%{box-shadow:0 0 0 0 rgba(217,119,87,.5)}70%{box-shadow:0 0 0 7px rgba(217,119,87,0)}100%{box-shadow:0 0 0 0 rgba(217,119,87,0)}}
-  @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+  @keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
 
-  /* ── section scaffolding ─────────────────────────── */
-  section{padding:64px 0;position:relative}
-  .sec-head{margin-bottom:34px;max-width:640px}
-  .sec-head h2{font-size:clamp(26px,5vw,38px);font-weight:600;letter-spacing:-.02em;margin:14px 0 10px}
-  .sec-head p{color:var(--muted);font-size:16px}
-  .rule{height:1px;background:linear-gradient(90deg,var(--ember-line),transparent);border:0}
+  /* ── live run-canvas centerpiece ──────────────────── */
+  .stage{margin:54px auto 0;max-width:1000px;animation:rise 1s .34s cubic-bezier(.2,.7,.2,1) both}
+  .frame{border:1px solid var(--border);border-radius:15px;overflow:hidden;background:var(--surface);
+    box-shadow:0 40px 90px -40px rgba(0,0,0,.9),0 0 0 1px rgba(217,119,87,.05),0 0 80px -30px rgba(217,119,87,.18)}
+  .titlebar{display:flex;align-items:center;gap:9px;padding:11px 15px;background:var(--surface-2);border-bottom:1px solid var(--border)}
+  .tl-dots{display:flex;gap:7px}.tl-dots i{width:11px;height:11px;border-radius:50%;background:var(--border);display:block}
+  .tl-title{font-family:var(--mono);font-size:12px;color:var(--dim);margin-left:5px}
+  .tl-spacer{flex:1}
+  .tl-tab{font-family:var(--mono);font-size:11px;color:var(--dim);padding:3px 9px;border-radius:7px}
+  .tl-tab.on{color:var(--ember);background:var(--ember-soft);border:1px solid var(--ember-line)}
 
-  /* ── how it works (steps) ────────────────────────── */
-  .steps{display:grid;gap:14px;grid-template-columns:1fr}
-  @media(min-width:720px){.steps{grid-template-columns:repeat(2,1fr)}}
-  .step{border:1px solid var(--border);background:var(--surface);border-radius:14px;padding:22px;
-    position:relative;overflow:hidden}
-  .step .n{font-family:var(--mono);font-size:12px;color:var(--ember);letter-spacing:.1em}
-  .step h3{font-size:18px;font-weight:600;margin:9px 0 7px}
-  .step p{color:var(--muted);font-size:14.5px}
-  .step::after{content:"";position:absolute;right:-30px;top:-30px;width:90px;height:90px;
-    background:var(--ember-soft);border-radius:50%;filter:blur(20px);opacity:.6}
+  .canvas{display:grid;grid-template-columns:1fr 296px;background:var(--bg);min-height:430px}
+  @media(max-width:780px){.canvas{grid-template-columns:1fr}}
+  .canvas-graph{position:relative;padding:18px;
+    background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,.045) 1px, transparent 0);background-size:22px 22px}
+  .canvas-rail{border-left:1px solid var(--border);background:var(--surface);padding:15px 15px 18px;display:flex;flex-direction:column;gap:0}
+  @media(max-width:780px){.canvas-rail{border-left:0;border-top:1px solid var(--border)}}
+  .rail-h{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:12px;display:flex;justify-content:space-between}
+  .rail-h .runid{color:var(--ember)}
+  .ev{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);opacity:.4;transition:opacity .45s}
+  .ev.show{opacity:1}
+  .ev:last-child{border-bottom:0}
+  .ev .ed{width:7px;height:7px;border-radius:50%;margin-top:6px;flex:none;background:var(--dim)}
+  .ev.build .ed{background:var(--ember)} .ev.verify .ed{background:var(--frost)} .ev.pass .ed{background:var(--ok)} .ev.gate .ed{background:var(--warn)}
+  .ev .et{font-size:12.5px;line-height:1.4}
+  .ev .et b{font-weight:600} .ev .et .em{font-family:var(--mono);font-size:10.5px;color:var(--dim);display:block;margin-top:2px}
+  .ev.pass .et b{color:var(--ok)} .ev.gate .et b{color:var(--warn)}
 
-  /* ── preview frames (shared) ─────────────────────── */
-  .frame{border:1px solid var(--border);border-radius:13px;overflow:hidden;background:var(--surface);
-    box-shadow:0 24px 60px -28px rgba(0,0,0,.8),0 0 0 1px rgba(217,119,87,.04)}
-  .titlebar{display:flex;align-items:center;gap:8px;padding:11px 14px;background:var(--surface-2);
-    border-bottom:1px solid var(--border)}
-  .tl-dots{display:flex;gap:7px}
-  .tl-dots i{width:11px;height:11px;border-radius:50%;background:var(--border);display:block}
-  .tl-title{font-family:var(--mono);font-size:12px;color:var(--dim);margin-left:6px}
+  /* SVG flow nodes */
+  .fg{width:100%;height:auto;display:block}
+  .fg .node-box{fill:var(--surface);stroke:var(--border);stroke-width:1.5;rx:11;transition:stroke .4s,filter .4s}
+  .fg .node-accent{transition:opacity .4s}
+  .fg .node-title{fill:var(--text);font:600 14px var(--sans)}
+  .fg .node-sub{fill:var(--dim);font:500 10.5px var(--mono);letter-spacing:.04em}
+  .fg .node-iter{fill:var(--dim);font:500 10px var(--mono)}
+  .fg .edge{fill:none;stroke:var(--border);stroke-width:2;transition:stroke .35s}
+  .fg .edge-label{font:600 9.5px var(--mono);letter-spacing:.08em;opacity:0;transition:opacity .35s}
+  .fg .pulse{fill:var(--ember);opacity:0}
+  .fg .dash{fill:none;stroke-width:2.4;stroke-linecap:round;opacity:0;stroke-dasharray:14 220;
+    transition:opacity .25s}
+  .fg .dash.flowing{opacity:1;animation:dashflow 1.1s linear infinite}
+  @keyframes dashflow{to{stroke-dashoffset:-234}}
 
-  /* terminal */
-  .term{font-family:var(--mono);font-size:13px;line-height:1.7;padding:18px 18px 22px;
-    color:var(--text);overflow-x:auto;background:
-      linear-gradient(180deg,rgba(217,119,87,.03),transparent 30%),var(--bg)}
-  .term pre{margin:0;white-space:pre;color:var(--ember);opacity:.92;font-size:12px;line-height:1.35}
-  .term .cmd{color:var(--text)}
-  .term .cmd .p{color:var(--ember)}
-  .term .row{display:flex;gap:14px}
-  .term .k{color:var(--muted);min-width:148px;display:inline-block}
-  .term .warnv{color:var(--ember)}
-  .term .ok{color:var(--frost)}
-  .term .cur{display:inline-block;width:8px;height:15px;background:var(--ember);
-    vertical-align:-2px;animation:blink 1.1s steps(1) infinite}
-  @keyframes blink{50%{opacity:0}}
-  .term .sl{color:var(--dim)}
+  /* node lit states (driven by JS classes on the <g>) */
+  .fg g.n .node-box{filter:none}
+  .fg g.n.run .node-box{stroke:var(--ember);filter:drop-shadow(0 0 9px rgba(217,119,87,.55))}
+  .fg g.n.run .node-accent{opacity:1}
+  .fg g.n.run .node-sub{fill:var(--ember)}
+  .fg g.n.pass .node-box{stroke:var(--ok)}
+  .fg g.n.pass .node-sub{fill:var(--ok)}
+  .fg g.n.gate .node-box{stroke:var(--warn);filter:drop-shadow(0 0 9px rgba(214,192,104,.45))}
+  .fg g.n.gate .node-sub{fill:var(--warn)}
+  .fg g.n.done .node-box{stroke:var(--ember);filter:drop-shadow(0 0 14px rgba(217,119,87,.6))}
+  .fg g.n.done .node-sub{fill:var(--ember)}
+  .fg g.n .node-accent{opacity:.32}
+  .fg .edge.lit{stroke:var(--ember-line)}
+  .fg .edge.loop.lit{stroke:var(--warn)}
+  .fg .edge-label.show{opacity:1}
+  .spark{fill:var(--ember-bright);opacity:0;transform-box:fill-box;transform-origin:center}
+  .spark.go{animation:spark 1.1s ease-out}
+  @keyframes spark{0%{opacity:1;transform:scale(.2)}100%{opacity:0;transform:scale(2.4)}}
 
-  /* app window */
-  .app{display:grid;grid-template-columns:172px 1fr;min-height:340px;background:var(--bg)}
-  @media(max-width:640px){.app{grid-template-columns:54px 1fr}}
-  .app-side{background:var(--surface);border-right:1px solid var(--border);padding:14px 10px;display:flex;flex-direction:column;gap:3px}
-  .app-side .sb-brand{display:flex;align-items:center;gap:9px;padding:6px 8px 14px}
-  .app-side .sb-brand svg{width:20px;height:20px}
-  .app-side .sb-brand b{font-weight:600;letter-spacing:.26em;font-size:12px}
-  @media(max-width:640px){.app-side .sb-brand b,.navi span{display:none}}
-  .navi{display:flex;align-items:center;gap:10px;padding:8px 9px;border-radius:8px;color:var(--muted);
-    font-size:13.5px;cursor:default}
+  /* ── section scaffolding ──────────────────────────── */
+  section{padding:74px 0;position:relative}
+  .sec-head{margin-bottom:38px;max-width:660px}
+  .sec-head.ctr{margin-left:auto;margin-right:auto;text-align:center}
+  .sec-head h2{font-size:clamp(28px,4.8vw,42px);font-weight:700;letter-spacing:-.03em;margin:14px 0 12px;line-height:1.05}
+  .sec-head p{color:var(--muted);font-size:16.5px;line-height:1.6}
+  .divider{height:1px;background:linear-gradient(90deg,transparent,var(--border) 30%,var(--border) 70%,transparent);border:0;max-width:var(--maxw);margin:0 auto}
+
+  /* ── paradigm split ───────────────────────────────── */
+  .para{display:grid;gap:16px;grid-template-columns:1fr}
+  @media(min-width:760px){.para{grid-template-columns:1fr 1fr}}
+  .pcol{border:1px solid var(--border);border-radius:16px;padding:26px;position:relative;overflow:hidden}
+  .pcol.old{background:var(--bg)}
+  .pcol.new{background:linear-gradient(150deg,var(--surface),var(--bg));border-color:var(--ember-line)}
+  .pcol .ptag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:14px}
+  .pcol.old .ptag{color:var(--dim)} .pcol.new .ptag{color:var(--ember)}
+  .pcol h3{font-size:20px;font-weight:600;margin-bottom:14px;letter-spacing:-.01em}
+  .pcol ul{list-style:none;display:flex;flex-direction:column;gap:11px}
+  .pcol li{display:flex;gap:11px;font-size:14.5px;color:var(--muted);line-height:1.45}
+  .pcol li .mk2{flex:none;width:18px;height:18px;margin-top:1px}
+  .pcol.old li .mk2{color:var(--dim)} .pcol.new li .mk2{color:var(--ember)}
+  .pcol.new li{color:var(--text)}
+  .pcol.new::after{content:"";position:absolute;right:-40px;top:-40px;width:140px;height:140px;
+    background:var(--ember-soft);border-radius:50%;filter:blur(30px)}
+
+  /* ── flow primitives ──────────────────────────────── */
+  .prims{display:grid;gap:16px;grid-template-columns:1fr}
+  @media(min-width:760px){.prims{grid-template-columns:repeat(3,1fr)}}
+  .prim{border:1px solid var(--border);background:var(--surface);border-radius:15px;padding:20px;overflow:hidden}
+  .prim:hover{border-color:var(--ember-line)}
+  .prim .pv{height:148px;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+  .prim h3{font-size:16px;font-weight:600;margin-bottom:5px}
+  .prim p{font-size:13.5px;color:var(--muted);line-height:1.5}
+  .mini{width:100%;height:100%}
+  .mini .mb{fill:var(--surface-2);stroke:var(--border);stroke-width:1.4}
+  .mini .ml{fill:var(--muted);font:600 10px var(--mono);text-anchor:middle}
+  .mini .me{fill:none;stroke:var(--border);stroke-width:1.8}
+  .mini .me.dash{stroke-dasharray:5 6;stroke:var(--ember-line);animation:dashmove 1.4s linear infinite}
+  @keyframes dashmove{to{stroke-dashoffset:-22}}
+  .mini .mb.b{stroke:var(--ember-line)} .mini .mb.v{stroke:var(--frost-line)} .mini .mb.g{stroke:rgba(214,192,104,.4)}
+  .mini .glow{animation:nodeglow 2.6s ease-in-out infinite}
+  @keyframes nodeglow{0%,100%{filter:none}50%{filter:drop-shadow(0 0 7px rgba(217,119,87,.5))}}
+
+  /* ── app render (workspace) ───────────────────────── */
+  .ws{display:grid;grid-template-columns:168px 1fr 250px;min-height:392px;background:var(--bg)}
+  @media(max-width:880px){.ws{grid-template-columns:52px 1fr}.ws .ws-feed{display:none}}
+  @media(max-width:560px){.ws{grid-template-columns:1fr}.ws .ws-side{display:none}}
+  .ws-side{background:var(--surface);border-right:1px solid var(--border);padding:14px 10px;display:flex;flex-direction:column;gap:3px}
+  .ws-side .sb{display:flex;align-items:center;gap:9px;padding:6px 8px 16px}
+  .ws-side .sb svg{width:19px;height:19px}.ws-side .sb b{font-weight:600;letter-spacing:.26em;font-size:11.5px}
+  @media(max-width:880px){.ws-side .sb b,.navi span{display:none}}
+  .navi{display:flex;align-items:center;gap:10px;padding:8px 9px;border-radius:8px;color:var(--muted);font-size:13px;cursor:default}
   .navi svg{width:15px;height:15px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6}
-  .navi.on{background:var(--ember-soft);color:var(--text)}
-  .navi.on svg{stroke:var(--ember)}
-  .navi .badge{margin-left:auto;font-family:var(--mono);font-size:10px;background:var(--surface-2);
-    border:1px solid var(--border);border-radius:6px;padding:1px 6px;color:var(--ember)}
-  @media(max-width:640px){.navi .badge{display:none}}
-  .app-main{padding:18px 20px;overflow:hidden}
-  .app-main .mh{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px}
-  .app-main h4{font-size:16px;font-weight:600}
-  .app-main .mh .meta{font-family:var(--mono);font-size:11px;color:var(--dim)}
-  .app-main .sub2{color:var(--muted);font-size:12.5px;margin-bottom:16px}
-  .tcard{border:1px solid var(--border);background:var(--surface);border-radius:11px;padding:13px 14px;margin-bottom:10px}
-  .tcard .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
-  .tcard .nm{font-weight:600;font-size:14px}
-  .tcard .root{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:3px}
-  .tcard .crew{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:9px;display:flex;gap:7px;flex-wrap:wrap}
-  .tcard .crew b{color:var(--frost);font-weight:500}
-  .chip{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
-    padding:3px 9px;border-radius:999px;border:1px solid var(--border);white-space:nowrap}
-  .chip.active{color:var(--ember);border-color:var(--ember-line);background:var(--ember-soft)}
-  .chip.cooled{color:var(--frost);border-color:rgba(125,168,184,.3)}
-  .chip.idle{color:var(--dim)}
-  .chip .d{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;vertical-align:1px;background:currentColor}
-  .chip.active .d{animation:ping 2.4s infinite}
+  .navi.on{background:var(--ember-soft);color:var(--text)}.navi.on svg{stroke:var(--ember)}
+  .navi .bdg{margin-left:auto;font-family:var(--mono);font-size:10px;background:var(--ember);color:#1c1009;border-radius:6px;padding:1px 6px;font-weight:600}
+  @media(max-width:880px){.navi .bdg{display:none}}
+  .ws-canvas{padding:16px 18px;position:relative;
+    background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,.04) 1px, transparent 0);background-size:20px 20px}
+  .ws-strip{display:flex;align-items:center;gap:9px;margin-bottom:8px;font-size:12.5px}
+  .ws-strip .sd{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+  .ws-strip .st{font-weight:600}.ws-strip .sm{font-family:var(--mono);font-size:11px;color:var(--dim);margin-left:auto}
+  .ws-feed{border-left:1px solid var(--border);background:var(--surface);padding:14px 13px;display:flex;flex-direction:column;gap:0}
+  .gatecard{border:1px solid var(--warn);background:rgba(214,192,104,.07);border-radius:11px;padding:13px;margin-top:auto}
+  .gatecard .gh{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--warn);margin-bottom:7px}
+  .gatecard .gb{font-size:12px;color:var(--muted);line-height:1.45;margin-bottom:11px}
+  .gatecard .gb code{font-family:var(--mono);font-size:11px;color:var(--frost)}
+  .gatecard .gacts{display:flex;gap:8px}
+  .gatecard .gacts button{flex:1;font-family:var(--sans);font-size:12px;font-weight:600;border-radius:8px;padding:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:default}
+  .gatecard .gacts .ap{background:var(--ember);border-color:var(--ember);color:#1c1009;flex:1.4}
 
-  /* ── features grid ───────────────────────────────── */
-  .feat{display:grid;gap:14px;grid-template-columns:1fr}
+  /* ── terminal ─────────────────────────────────────── */
+  .term{font-family:var(--mono);font-size:13px;line-height:1.7;padding:18px;color:var(--text);overflow-x:auto;
+    background:linear-gradient(180deg,rgba(217,119,87,.03),transparent 28%),var(--bg)}
+  .term pre{margin:0;white-space:pre;color:var(--ember);opacity:.9;font-size:11.5px;line-height:1.32}
+  .term .cmd{color:var(--text)}.term .cmd .p{color:var(--ember)}
+  .term .row{display:flex;gap:14px}.term .k{color:var(--muted);min-width:150px;display:inline-block}
+  .term .warnv{color:var(--warn)}.term .ok{color:var(--ok)}.term .frostv{color:var(--frost)}
+  .term .sl{color:var(--dim)}
+  .term .cur{display:inline-block;width:8px;height:15px;background:var(--ember);vertical-align:-2px;animation:blink 1.1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  /* ── features ─────────────────────────────────────── */
+  .feat{display:grid;gap:15px;grid-template-columns:1fr}
   @media(min-width:640px){.feat{grid-template-columns:repeat(2,1fr)}}
-  @media(min-width:920px){.feat{grid-template-columns:repeat(3,1fr)}}
-  .card{border:1px solid var(--border);background:var(--surface);border-radius:14px;padding:22px;
-    transition:border-color .25s,transform .25s}
-  .card:hover{border-color:var(--ember-line);transform:translateY(-2px)}
-  .card .ic{width:34px;height:34px;border-radius:9px;background:var(--ember-soft);
-    display:flex;align-items:center;justify-content:center;margin-bottom:14px;border:1px solid var(--ember-line)}
-  .card .ic svg{width:18px;height:18px;stroke:var(--ember);fill:none;stroke-width:1.7}
-  .card h3{font-size:16.5px;font-weight:600;margin-bottom:7px}
-  .card p{color:var(--muted);font-size:14px}
-  .card code{font-family:var(--mono);font-size:12.5px;color:var(--frost);background:var(--surface-2);
-    padding:1px 6px;border-radius:5px}
+  @media(min-width:960px){.feat{grid-template-columns:repeat(3,1fr)}}
+  .card{border:1px solid var(--border);background:var(--surface);border-radius:15px;padding:23px;transition:border-color .25s,transform .25s}
+  .card:hover{border-color:var(--ember-line);transform:translateY(-3px)}
+  .card .ic{width:36px;height:36px;border-radius:10px;background:var(--ember-soft);display:flex;align-items:center;justify-content:center;margin-bottom:15px;border:1px solid var(--ember-line)}
+  .card .ic svg{width:19px;height:19px;stroke:var(--ember);fill:none;stroke-width:1.7}
+  .card h3{font-size:16.5px;font-weight:600;margin-bottom:8px}
+  .card p{color:var(--muted);font-size:14px;line-height:1.55}
+  .card code{font-family:var(--mono);font-size:12px;color:var(--frost);background:var(--surface-2);padding:1px 6px;border-radius:5px}
 
-  /* ── lifecycle motif ─────────────────────────────── */
-  .life{border:1px solid var(--border);border-radius:16px;background:
-      linear-gradient(120deg,var(--surface),var(--bg));padding:30px 24px;text-align:center}
-  .life .track{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin-top:18px}
-  .lstate{display:flex;flex-direction:column;align-items:center;gap:9px;min-width:84px}
-  .ldia{width:26px;height:26px}
-  .lstate .lb{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-  .arr{color:var(--dim);font-family:var(--mono);align-self:flex-start;margin-top:6px}
-  @media(max-width:560px){.arr{display:none}.life .track{gap:16px}}
-
-  /* ── autonomy flow strip ─────────────────────────── */
-  .flow{display:flex;flex-direction:column;gap:10px;margin-top:4px}
-  @media(min-width:820px){.flow{flex-direction:row;align-items:stretch}}
-  .fnode{flex:1;border:1px solid var(--border);background:var(--surface);border-radius:12px;
-    padding:14px 15px;display:flex;flex-direction:column;gap:4px}
-  .fnode .fi{font-family:var(--mono);color:var(--ember);font-size:17px;line-height:1}
-  .fnode b{font-size:14px;font-weight:600}
-  .fnode i{font-style:normal;font-family:var(--mono);font-size:10.5px;color:var(--dim);letter-spacing:.02em}
-  .fnode.gate{border-color:var(--ember-line);background:var(--ember-soft)}
-  .fnode.gate b{color:var(--ember)}
-  .fconn{align-self:center;color:var(--dim);font-family:var(--mono);font-size:13px}
-  .fconn::before{content:"↓"}
-  @media(min-width:820px){.fconn::before{content:"→"}}
-
-  /* ── triage card ─────────────────────────────────── */
-  .triage{max-width:520px;margin:30px auto 0;border:1px solid var(--border);border-radius:14px;
-    background:var(--surface);overflow:hidden;box-shadow:0 26px 64px -32px rgba(0,0,0,.85),0 0 0 1px rgba(217,119,87,.05)}
-  .triage .th{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;
-    border-bottom:1px solid var(--border);background:var(--surface-2)}
+  /* ── triage card ──────────────────────────────────── */
+  .triage{max-width:540px;margin:0 auto;border:1px solid var(--border);border-radius:15px;background:var(--surface);overflow:hidden;
+    box-shadow:0 30px 70px -36px rgba(0,0,0,.85),0 0 0 1px rgba(217,119,87,.05)}
+  .triage .th{display:flex;align-items:center;justify-content:space-between;padding:13px 17px;border-bottom:1px solid var(--border);background:var(--surface-2)}
   .triage .th .lab{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
-  .triage .th .scored{font-family:var(--mono);font-size:10.5px;color:var(--ember);border:1px solid var(--ember-line);
-    background:var(--ember-soft);border-radius:999px;padding:2px 10px}
-  .triage .tb{padding:17px 16px}
-  .triage .tt{font-size:15.5px;font-weight:600;line-height:1.3}
-  .triage .tid{font-family:var(--mono);font-size:11px;color:var(--dim);margin:4px 0 15px}
-  .triage .meta-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px}
-  .triage .kv{font-family:var(--mono);font-size:11px;border:1px solid var(--border);border-radius:7px;
-    padding:4px 9px;color:var(--muted)}
+  .triage .th .scored{font-family:var(--mono);font-size:10.5px;color:var(--ember);border:1px solid var(--ember-line);background:var(--ember-soft);border-radius:999px;padding:2px 11px}
+  .triage .tb{padding:18px 17px}
+  .triage .tt{font-size:16px;font-weight:600;line-height:1.3}
+  .triage .tid{font-family:var(--mono);font-size:11px;color:var(--dim);margin:5px 0 16px}
+  .triage .meta-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .triage .kv{font-family:var(--mono);font-size:11px;border:1px solid var(--border);border-radius:7px;padding:4px 10px;color:var(--muted)}
   .triage .kv b{color:var(--text);font-weight:500}
-  .triage .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
-  .triage .crewchips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:15px}
-  .triage .pc{font-family:var(--mono);font-size:11.5px;border:1px solid rgba(125,168,184,.32);color:var(--frost);
-    border-radius:999px;padding:3px 10px}
-  .triage .risk{display:flex;align-items:flex-start;gap:9px;font-size:12.5px;line-height:1.45;color:var(--ember);
-    background:var(--ember-soft);border:1px solid var(--ember-line);border-radius:10px;padding:10px 12px;margin-bottom:17px}
-  .triage .risk span:first-child{flex:none}
+  .triage .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:9px}
+  .triage .crewchips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}
+  .triage .pc{font-family:var(--mono);font-size:11.5px;border:1px solid var(--frost-line);color:var(--frost);border-radius:999px;padding:3px 11px}
+  .triage .risk{display:flex;align-items:flex-start;gap:9px;font-size:12.5px;line-height:1.45;color:var(--warn);background:rgba(214,192,104,.08);border:1px solid rgba(214,192,104,.32);border-radius:10px;padding:11px 13px;margin-bottom:18px}
   .triage .acts{display:flex;gap:9px}
-  .triage .acts button{font-family:var(--sans);font-size:13px;font-weight:500;border-radius:9px;padding:10px 12px;
-    border:1px solid var(--border);background:transparent;color:var(--muted);cursor:default;flex:1}
+  .triage .acts button{font-family:var(--sans);font-size:13px;font-weight:500;border-radius:9px;padding:11px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:default;flex:1}
   .triage .acts .accept{background:var(--ember);border-color:var(--ember);color:#1c1009;font-weight:600;flex:1.5}
 
-  /* ── footer ──────────────────────────────────────── */
-  footer{border-top:1px solid var(--border);padding:40px 0 56px;margin-top:30px}
-  .foot{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
-  .foot .l{display:flex;align-items:center;gap:11px}
-  .foot .l svg{width:22px;height:22px}
-  .foot .l b{font-weight:600;letter-spacing:.28em;font-size:13px}
-  .foot .meta{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-align:right;line-height:1.8}
-  .foot .meta .ststrip{color:var(--muted)}
-  .foot .meta .ststrip .e{color:var(--ember)}
+  /* ── surfaces strip ───────────────────────────────── */
+  .surf{display:grid;gap:15px;grid-template-columns:1fr}
+  @media(min-width:760px){.surf{grid-template-columns:repeat(3,1fr)}}
+  .scell{border:1px solid var(--border);background:var(--surface);border-radius:14px;padding:22px;text-align:center}
+  .scell .si{width:42px;height:42px;margin:0 auto 13px;border-radius:11px;border:1px solid var(--ember-line);background:var(--ember-soft);display:flex;align-items:center;justify-content:center}
+  .scell .si svg{width:21px;height:21px;stroke:var(--ember);fill:none;stroke-width:1.6}
+  .scell h3{font-size:16px;font-weight:600;margin-bottom:6px}
+  .scell p{font-size:13.5px;color:var(--muted);line-height:1.5}
+  .surf-note{text-align:center;font-family:var(--mono);font-size:12.5px;color:var(--dim);margin-top:20px}
+  .surf-note .e{color:var(--frost)}
 
-  /* gentle scroll-reveal — gated behind .js so content is NEVER hidden without JS,
-     with a failsafe (below) that reveals everything regardless. */
-  .js .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}
+  /* ── lifecycle ────────────────────────────────────── */
+  .life{border:1px solid var(--border);border-radius:18px;background:linear-gradient(120deg,var(--surface),var(--bg));padding:34px 24px;text-align:center}
+  .life .track{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:22px}
+  .lstate{display:flex;flex-direction:column;align-items:center;gap:10px;min-width:90px}
+  .ldia{width:30px;height:30px}
+  .lstate.burn .ldia{animation:lifeburn 2s ease-in-out infinite}
+  @keyframes lifeburn{0%,100%{filter:drop-shadow(0 0 0 transparent)}50%{filter:drop-shadow(0 0 8px rgba(217,119,87,.6))}}
+  .lstate .lb{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+  .arr{color:var(--dim);font-family:var(--mono);align-self:flex-start;margin-top:8px}
+  @media(max-width:560px){.arr{display:none}.life .track{gap:18px}}
+
+  /* ── final CTA ────────────────────────────────────── */
+  .finale{text-align:center;border:1px solid var(--ember-line);border-radius:20px;padding:54px 28px;position:relative;overflow:hidden;
+    background:radial-gradient(120% 120% at 50% 0,rgba(217,119,87,.14),transparent 60%),var(--surface)}
+  .finale h2{font-size:clamp(28px,5vw,44px);font-weight:700;letter-spacing:-.03em;margin-bottom:14px}
+  .finale p{color:var(--muted);max-width:560px;margin:0 auto 28px;font-size:16.5px}
+  .finale .mk3{width:54px;height:54px;margin:0 auto 22px;animation:breath 4.2s ease-in-out infinite}
+
+  /* ── footer ───────────────────────────────────────── */
+  footer{border-top:1px solid var(--border);padding:38px 0 56px;margin-top:30px}
+  .foot{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  .foot .l{display:flex;align-items:center;gap:11px}.foot .l svg{width:22px;height:22px}
+  .foot .l b{font-weight:600;letter-spacing:.28em;font-size:13px}
+  .foot .meta{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-align:right;line-height:1.9}
+  .foot .meta .e{color:var(--ember)}
+
+  /* scroll reveal */
+  .js .reveal{opacity:0;transform:translateY(26px);transition:opacity .8s ease,transform .8s ease}
   .reveal.in{opacity:1!important;transform:none!important}
-  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.js .reveal{opacity:1;transform:none}}
+  @media(prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+    .js .reveal{opacity:1;transform:none}
+    .fg .dash{display:none}
+  }
 </style>
 <script>document.documentElement.classList.add('js')</script>
 </head>
 <body>
 
-<!-- reusable mark symbols -->
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <defs>
-    <mask id="hc"><rect width="100" height="100" fill="#fff"/>
-      <path d="M 50 78 L 50 56 M 50 56 L 36 48 L 46 38 L 34 30 M 50 56 L 64 48 L 54 38 L 66 30"
-        stroke="#000" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></mask>
-    <symbol id="mark" viewBox="0 0 100 100"><path d="M 50 15 L 85 50 L 50 85 L 15 50 Z" mask="url(#hc)"/></symbol>
-  </defs>
-</svg>
+<!-- reusable mark symbol -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <mask id="hc"><rect width="100" height="100" fill="#fff"/>
+    <path d="M 50 78 L 50 56 M 50 56 L 36 48 L 46 38 L 34 30 M 50 56 L 64 48 L 54 38 L 66 30"
+      stroke="#000" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></mask>
+  <symbol id="mark" viewBox="0 0 100 100"><path d="M 50 15 L 85 50 L 50 85 L 15 50 Z" mask="url(#hc)"/></symbol>
+</defs></svg>
 
 <header class="nav">
   <div class="wrap nav-in">
@@ -279,257 +351,419 @@
       <svg class="mk" viewBox="0 0 100 100"><use href="#mark" fill="#FAF9F5"/></svg>
       <span class="wordmark">HE<span class="ember">A</span>RTH</span>
     </a>
-    <span class="nav-tag">multi-agent orchestration · v1.0.0</span>
+    <nav class="nav-r">
+      <a class="nav-link hideable" href="#flows">Flows</a>
+      <a class="nav-link hideable" href="#app">The app</a>
+      <a class="nav-link hideable" href="#features">Features</a>
+      <a class="nav-cta" href="https://github.com/Trollyal/hearth-app/releases/latest" target="_blank" rel="noopener">Get v1.0</a>
+    </nav>
   </div>
 </header>
 
 <main id="top">
 
   <!-- HERO -->
-  <div class="hero">
-    <div class="wrap">
-      <a class="relflag" href="https://github.com/Trollyal/hearth-app/releases/latest" target="_blank" rel="noopener">
-        <span class="rdot"></span> Hearth <b>v1.0</b> is here — the app runs the work now <span class="rarr">→</span>
-      </a>
-      <div class="mark-xl"><svg viewBox="0 0 100 100"><use href="#mark" fill="#FAF9F5"/></svg></div>
-      <h1 class="word">HE<span class="a">A</span>RTH</h1>
-      <p class="lede">Your coding session becomes a project manager.</p>
-      <p class="sub">You compose the work as a <span class="ember">flow</span> — build, verify, audit, gate — and Hearth's executor runs it for you, step by step, on a live canvas. All coordinated through durable file-based state, with human gates where they matter.</p>
-      <div class="pills">
-        <span class="pill"><span class="dot"></span>framework</span>
-        <span class="pill active"><span class="dot"></span>desktop app</span>
-        <span class="pill"><span class="dot"></span>CLI</span>
-      </div>
+  <div class="hero"><div class="wrap">
+    <a class="relflag" href="https://github.com/Trollyal/hearth-app/releases/latest" target="_blank" rel="noopener">
+      <span class="rdot"></span> Hearth <b>v1.0</b> — the app runs the work now <span class="rarr">→</span>
+    </a>
+    <div class="mark-xl"><svg viewBox="0 0 100 100"><use href="#mark" fill="#FAF9F5"/></svg></div>
+    <h1 class="head">Compose the work as a flow.<br><span class="a">The app runs it.</span></h1>
+    <p class="lede">Hearth turns your coding session into a <b>project manager</b>. You design the build → verify → gate graph; the executor walks it on a live canvas — looping on failure, fanning out in parallel, pausing only at the gates you set. One durable file-based state, three surfaces.</p>
+    <div class="cta-row">
+      <a class="btn btn-prim" href="https://github.com/Trollyal/hearth-app/releases/latest" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg> Download v1.0</a>
+      <a class="btn btn-ghost" href="https://github.com/Trollyal/hearth-app" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.3 3.3 0 0 0-.9-2.5c3-.3 6.2-1.5 6.2-6.7A5.2 5.2 0 0 0 20 5.8 4.8 4.8 0 0 0 19.9 2S18.7 1.6 16 3.5a13.4 13.4 0 0 0-7 0C6.3 1.6 5.1 2 5.1 2A4.8 4.8 0 0 0 5 5.8a5.2 5.2 0 0 0-1.4 3.6c0 5.2 3.2 6.4 6.2 6.7a3.3 3.3 0 0 0-.9 2.5V22"/></svg> View on GitHub</a>
     </div>
-  </div>
-
-  <!-- HOW IT WORKS -->
-  <section class="reveal">
-    <div class="wrap">
-      <div class="sec-head">
-        <span class="eyebrow">the idea</span>
-        <h2>One session orchestrates. The app runs the work.</h2>
-        <p>The main thread never writes code. It reads the work, composes it as a flow, fires it, and surfaces a decision only when one is genuinely needed.</p>
-      </div>
-      <div class="steps">
-        <div class="step"><div class="n">01</div><h3>The session is the PM</h3><p>Your main thread composes the work as a flow and fires it, then supervises and gates the result. It coordinates — it never writes code.</p></div>
-        <div class="step"><div class="n">02</div><h3>The executor runs the loop</h3><p>Build → verify, looping on FAIL with findings carried forward; parallel assessors fanning into a synthesis; branches and gates. Deterministic orchestration, not a prompt guessing what happened.</p></div>
-        <div class="step"><div class="n">03</div><h3>State lives on disk</h3><p>Every event, command, decision, and run record is a file. The work survives context resets — and the companion app reads the same files, no IPC.</p></div>
-        <div class="step"><div class="n">04</div><h3>You hold the gates</h3><p>Ambiguous calls become explicit human checkpoints. Everything else runs autonomously until there's a real decision to make.</p></div>
-      </div>
+    <div class="pills">
+      <span class="pill active"><span class="dot"></span>desktop app</span>
+      <span class="pill"><span class="dot"></span>framework</span>
+      <span class="pill"><span class="dot"></span>CLI</span>
+      <span class="pill"><span class="dot"></span>MCP server</span>
     </div>
-  </section>
 
-  <!-- FLOWS (v1) -->
-  <section class="reveal">
-    <div class="wrap">
-      <div class="sec-head">
-        <span class="eyebrow">new in v1</span>
-        <h2>Design the work as a flow.</h2>
-        <p>Compose a graph — build, verify, audit, parallel assessors, human gates — by hand on the canvas, or describe the task in a sentence and let the planner draft it. Fire it, and the executor walks the graph: build→verify loops carrying findings forward, fan-ins, branches, gates — committing on green. Every node lights up live.</p>
-      </div>
-      <div class="flow">
-        <div class="fnode"><span class="fi">✦</span><b>Plan / author</b><i>canvas · or plan with AI</i></div>
-        <span class="fconn"></span>
-        <div class="fnode"><span class="fi">⚒</span><b>Build</b><i>SoftwareDeveloper</i></div>
-        <span class="fconn"></span>
-        <div class="fnode"><span class="fi">✓</span><b>Verify</b><i>QaTester · loops on FAIL</i></div>
-        <span class="fconn"></span>
-        <div class="fnode gate"><span class="fi">✋</span><b>Gate</b><i>ship review</i></div>
-        <span class="fconn"></span>
-        <div class="fnode"><span class="fi">◆</span><b>Run record</b><i>status · provenance</i></div>
-      </div>
-      <p class="muted" style="font-size:13px;margin-top:16px;text-align:center;max-width:680px;margin-left:auto;margin-right:auto">The executor shells one agent per node under an enforced output contract — no stdout-sniffing. Every read &amp; write is attributed to its repo; a write to a read-only mount is flagged loudly.</p>
-    </div>
-  </section>
-
-  <!-- TERMINAL PREVIEW -->
-  <section class="reveal">
-    <div class="wrap">
-      <div class="sec-head">
-        <span class="eyebrow">the cli</span>
-        <h2>Drive it from the terminal.</h2>
-        <p>One binary over the same file-based state — check status, dispatch, tail crews, manage topics.</p>
-      </div>
+    <!-- LIVE RUN CANVAS -->
+    <div class="stage">
       <div class="frame">
-        <div class="titlebar"><div class="tl-dots"><i></i><i></i><i></i></div><span class="tl-title">~/work — hearth</span></div>
-        <div class="term">
-<pre>    ╱╲
-   ╱▴▴╲           H  E  A  R  T  H
-   ╲▾▾╱           ────────────────
-    ╲╱            multi-agent orchestration framework</pre>
-          <div class="cmd"><span class="p">❯</span> hearth status</div>
-          <div style="height:8px"></div>
-          <div class="row"><span class="k">topics</span><span>2 active / 3 total</span></div>
-          <div class="row"><span class="k">pending events</span><span class="warnv">2</span></div>
-          <div class="row"><span class="k">open escalations</span><span>0 <span class="sl">(0 aging)</span></span></div>
-          <div class="row"><span class="k">triage awaiting</span><span>0</span></div>
-          <div style="height:12px"></div>
-          <div class="sl">active topics</div>
-          <div class="row"><span class="k">◆ checkout-redesign</span><span class="warnv">active</span> <span class="sl">· crew: 3 building</span></div>
-          <div class="row"><span class="k">◇ cookies-shrink-fix</span><span class="ok">cooled</span> <span class="sl">· 2/3 verified</span></div>
-          <div style="height:10px"></div>
-          <div class="cmd"><span class="p">❯</span> <span class="cur"></span></div>
+        <div class="titlebar">
+          <div class="tl-dots"><i></i><i></i><i></i></div>
+          <span class="tl-title">Hearth — checkout-rounding-fix</span>
+          <span class="tl-spacer"></span>
+          <span class="tl-tab on">Workspace</span><span class="tl-tab">Feed</span><span class="tl-tab">Triage</span>
         </div>
-      </div>
-    </div>
-  </section>
+        <div class="canvas">
+          <div class="canvas-graph">
+            <svg class="fg" viewBox="0 0 420 460" id="flowgraph" aria-label="A live run: build, verify with a fail loop, and a delivery gate">
+              <!-- edges -->
+              <path class="edge" id="e-b2v" d="M210 102 L210 191"/>
+              <path class="edge loop" id="e-loop" d="M134 100 C 70 110, 70 185, 130 197"/>
+              <path class="edge" id="e-v2d" d="M210 267 L210 356"/>
+              <!-- animated dash overlays -->
+              <path class="dash" id="d-b2v" style="stroke:var(--ember)" d="M210 102 L210 191"/>
+              <path class="dash" id="d-loop" style="stroke:var(--warn)" d="M130 197 C 70 185, 70 110, 134 100"/>
+              <path class="dash" id="d-v2d" style="stroke:var(--ok)" d="M210 267 L210 356"/>
+              <!-- edge labels -->
+              <text class="edge-label" id="l-loop" x="58" y="152" fill="var(--warn)">FAIL ↺</text>
+              <text class="edge-label" id="l-pass" x="218" y="316" fill="var(--ok)">PASS</text>
 
-  <!-- APP PREVIEW -->
-  <section class="reveal">
-    <div class="wrap">
-      <div class="sec-head">
-        <span class="eyebrow">the app</span>
-        <h2>Or watch the whole forge at a glance.</h2>
-        <p>A desktop control plane over the same state — topics, crews, the inbox of decisions waiting on you, and per-repo adapters.</p>
-      </div>
-      <div class="frame">
-        <div class="titlebar"><div class="tl-dots"><i></i><i></i><i></i></div><span class="tl-title">Hearth</span></div>
-        <div class="app">
-          <aside class="app-side">
-            <div class="sb-brand"><svg viewBox="0 0 100 100"><use href="#mark" fill="#FAF9F5"/></svg><b>HE<span class="ember">A</span>RTH</b></div>
-            <div class="navi"><svg viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h12"/></svg><span>Inbox</span><span class="badge">2</span></div>
-            <div class="navi"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16"/></svg><span>Backlog</span></div>
-            <div class="navi on"><svg viewBox="0 0 24 24"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="17" r="3"/><path d="M7 10v4a3 3 0 0 0 3 3h4"/></svg><span>Topics</span></div>
-            <div class="navi"><svg viewBox="0 0 24 24"><path d="M9 3v6l-3 3 3 3v6M15 3v6l3 3-3 3v6"/></svg><span>Adapters</span></div>
-            <div class="navi"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Feed</span></div>
-          </aside>
-          <div class="app-main">
-            <div class="mh"><h4>Topics</h4><span class="meta">2 active · 3 total</span></div>
-            <div class="sub2">a topic binds one repo, several, or none — each read-only or read-write</div>
-
-            <div class="tcard">
-              <div class="top"><div><div class="nm">checkout-redesign</div><div class="root">~/work/storefront · ISSUE-1842</div></div>
-                <span class="chip active"><span class="d"></span>active</span></div>
-              <div class="crew"><span>crew</span><b>SoftwareDeveloper</b><b>QaTester</b><b>UxDesigner</b><span class="sl">· iter 2/3</span></div>
-            </div>
-
-            <div class="tcard">
-              <div class="top"><div><div class="nm">cookies-shrink-fix</div><div class="root">~/work/storefront · ISSUE-1723</div></div>
-                <span class="chip cooled"><span class="d"></span>cooled</span></div>
-              <div class="crew"><span>verified</span><b>2 / 3 gates</b><span class="sl">· ready for review</span></div>
-            </div>
-
-            <div class="tcard">
-              <div class="top"><div><div class="nm">api-pagination</div><div class="root">~/work/backend · queued</div></div>
-                <span class="chip idle"><span class="d"></span>idle</span></div>
-              <div class="crew"><span>adapter</span><b>.claude/hearth/</b><span class="sl">· dispatch on accept</span></div>
-            </div>
+              <!-- BUILD -->
+              <g class="n" id="n-build">
+                <rect class="node-box" x="130" y="32" width="160" height="70" rx="11"/>
+                <rect class="node-accent" x="130" y="32" width="3.5" height="70" rx="2" fill="var(--ember)"/>
+                <text class="node-title" x="148" y="62">Build</text>
+                <text class="node-iter" id="t-build-iter" x="270" y="56" text-anchor="end">iter 1</text>
+                <text class="node-sub" id="t-build" x="148" y="82">SoftwareDeveloper</text>
+              </g>
+              <!-- VERIFY -->
+              <g class="n" id="n-verify">
+                <rect class="node-box" x="130" y="197" width="160" height="70" rx="11"/>
+                <rect class="node-accent" x="130" y="197" width="3.5" height="70" rx="2" fill="var(--frost)"/>
+                <text class="node-title" x="148" y="227">Verify</text>
+                <text class="node-iter" id="t-verify-iter" x="270" y="221" text-anchor="end"></text>
+                <text class="node-sub" id="t-verify" x="148" y="247">QaTester</text>
+              </g>
+              <!-- DELIVER -->
+              <g class="n" id="n-deliver">
+                <rect class="node-box" x="130" y="362" width="160" height="70" rx="11"/>
+                <rect class="node-accent" x="130" y="362" width="3.5" height="70" rx="2" fill="var(--warn)"/>
+                <text class="node-title" x="148" y="392">Deliver</text>
+                <text class="node-sub" id="t-deliver" x="148" y="412">queued</text>
+                <circle class="spark" id="spark" cx="210" cy="397" r="6"/>
+              </g>
+            </svg>
+          </div>
+          <div class="canvas-rail">
+            <div class="rail-h"><span>Run feed</span><span class="runid">R-1781</span></div>
+            <div class="ev build" id="ev-1"><span class="ed"></span><span class="et"><b>Build</b> dispatched<span class="em">SoftwareDeveloper · iter 1 · coding</span></span></div>
+            <div class="ev verify" id="ev-2"><span class="ed"></span><span class="et"><b>Verify</b> dispatched<span class="em">QaTester · iter 1 · testing</span></span></div>
+            <div class="ev build" id="ev-3"><span class="ed"></span><span class="et"><b>FAIL</b> → loop to build<span class="em">findings carried forward · iter 2</span></span></div>
+            <div class="ev pass" id="ev-4"><span class="ed"></span><span class="et"><b>PASS</b> — verification complete<span class="em">QaTester · iter 2 · committed</span></span></div>
+            <div class="ev gate" id="ev-5"><span class="ed"></span><span class="et"><b>Delivery gate opened</b><span class="em">2 files · +37 −9 · awaiting your go-ahead</span></span></div>
           </div>
         </div>
       </div>
     </div>
-  </section>
+  </div></div>
 
-  <!-- AUTONOMOUS INTAKE / TRIAGE -->
-  <section class="reveal">
-    <div class="wrap">
-      <div class="sec-head">
-        <span class="eyebrow">autonomous intake</span>
-        <h2>It works the backlog while you're away.</h2>
-        <p>Point Hearth at a source. It pulls new tickets on a schedule, triages each one — complexity, the crew to throw at it, risk flags — and leaves you a single decision. Accept, and a crew is dispatched into its own worktree.</p>
+  <!-- PARADIGM -->
+  <section id="idea"><div class="wrap reveal">
+    <div class="sec-head ctr">
+      <span class="eyebrow ctr">the shift</span>
+      <h2>You stopped writing code.<br>You started directing it.</h2>
+      <p>The old loop was one session guessing its way through a task. v1 splits the roles: your session is the PM that composes and gates; a deterministic executor does the building. No more reading stdout to guess what happened.</p>
+    </div>
+    <div class="para">
+      <div class="pcol old">
+        <div class="ptag">before — one session, one thread</div>
+        <h3>Prompt, hope, re-prompt</h3>
+        <ul>
+          <li><svg class="mk2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>One agent juggles building, testing, and remembering — context bloats, then resets.</li>
+          <li><svg class="mk2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>Progress is invisible — you scroll a transcript to find out what changed.</li>
+          <li><svg class="mk2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>"Did it verify?" is a vibe, not a verdict. Findings get lost between turns.</li>
+        </ul>
       </div>
-      <div class="flow">
-        <div class="fnode"><span class="fi">⟳</span><b>Source</b><i>Notion · every 30m</i></div>
-        <span class="fconn"></span>
-        <div class="fnode"><span class="fi">⚖</span><b>Triage</b><i>complexity · crew · risk</i></div>
-        <span class="fconn"></span>
-        <div class="fnode gate"><span class="fi">✋</span><b>Your gate</b><i>accept / defer / reject</i></div>
-        <span class="fconn"></span>
-        <div class="fnode"><span class="fi">◆</span><b>Dispatch</b><i>crew → worktree</i></div>
-        <span class="fconn"></span>
-        <div class="fnode"><span class="fi">≋</span><b>Feed</b><i>live progress</i></div>
+      <div class="pcol new">
+        <div class="ptag">v1 — orchestrator + executor</div>
+        <h3>Compose, fire, gate</h3>
+        <ul>
+          <li><svg class="mk2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12l5 5L20 7"/></svg>Your session composes the work as a typed graph and hands it off — then stays free to talk.</li>
+          <li><svg class="mk2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12l5 5L20 7"/></svg>The executor walks it deterministically: build → verify loops, carrying verifier findings into the next build.</li>
+          <li><svg class="mk2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12l5 5L20 7"/></svg>Every node lights up live on a canvas. PASS commits and opens a delivery gate — automatically.</li>
+        </ul>
       </div>
+    </div>
+  </div></section>
 
-      <div class="triage">
-        <div class="th"><span class="lab">Triage card</span><span class="scored">◆ scored · auto</span></div>
-        <div class="tb">
-          <div class="tt">Cart total ignores multi-currency rounding</div>
-          <div class="tid">ISSUE-1907 · storefront · pulled 19:30</div>
-          <div class="meta-row">
-            <span class="kv">archetype <b>bug</b></span>
-            <span class="kv">complexity <b>medium</b></span>
-            <span class="kv">workflow <b>crew · 3 iter</b></span>
+  <hr class="divider">
+
+  <!-- FLOW PRIMITIVES -->
+  <section id="flows"><div class="wrap reveal">
+    <div class="sec-head">
+      <span class="eyebrow">design the work</span>
+      <h2>Flows, not prompts.</h2>
+      <p>Compose a graph from typed nodes — build, verify, research, synthesize, human-gate — wired by typed edges. Author it on the canvas, or describe the task in a sentence and let the planner draft it. The executor handles the rest: bounded loops, verdict-gated branches, parallel fan-in.</p>
+    </div>
+    <div class="prims">
+      <div class="prim">
+        <div class="pv"><svg class="mini" viewBox="0 0 200 130">
+          <path class="me dash" d="M70 40 C 30 50, 30 80, 68 90"/>
+          <path class="me" d="M100 55 L100 73" marker-end=""/>
+          <rect class="mb b glow" x="62" y="22" width="76" height="34" rx="8"/><text class="ml" x="100" y="43">build</text>
+          <rect class="mb v" x="62" y="88" width="76" height="34" rx="8"/><text class="ml" x="100" y="109">verify</text>
+        </svg></div>
+        <h3>Build ⇄ Verify loop</h3>
+        <p>Verify fails? The executor loops back to build with the findings attached, up to the node's iteration budget. PASS commits.</p>
+      </div>
+      <div class="prim">
+        <div class="pv"><svg class="mini" viewBox="0 0 200 130">
+          <path class="me" d="M44 50 L96 78"/><path class="me" d="M100 46 L100 76"/><path class="me" d="M156 50 L104 78"/>
+          <rect class="mb v" x="20" y="22" width="48" height="28" rx="7"/><text class="ml" x="44" y="40" style="font-size:8.5px">sec</text>
+          <rect class="mb v" x="76" y="22" width="48" height="28" rx="7"/><text class="ml" x="100" y="40" style="font-size:8.5px">arch</text>
+          <rect class="mb v" x="132" y="22" width="48" height="28" rx="7"/><text class="ml" x="156" y="40" style="font-size:8.5px">ux</text>
+          <rect class="mb b glow" x="62" y="78" width="76" height="32" rx="8"/><text class="ml" x="100" y="98">synthesize</text>
+        </svg></div>
+        <h3>Parallel fan-in</h3>
+        <p>Run a panel of read-only assessors at once — security, architecture, UX — and fold their findings into one synthesis node.</p>
+      </div>
+      <div class="prim">
+        <div class="pv"><svg class="mini" viewBox="0 0 200 130">
+          <path class="me" d="M100 50 L60 76"/><path class="me dash" d="M100 50 L140 76"/>
+          <rect class="mb v" x="62" y="22" width="76" height="30" rx="8"/><text class="ml" x="100" y="41">verify</text>
+          <rect class="mb g glow" x="26" y="78" width="68" height="30" rx="8"/><text class="ml" x="60" y="97" style="font-size:9px">gate</text>
+          <rect class="mb b" x="108" y="78" width="66" height="30" rx="8"/><text class="ml" x="141" y="97" style="font-size:9px">re-build</text>
+          <text class="ml" x="74" y="68" style="fill:var(--ok);font-size:8px">PASS</text>
+          <text class="ml" x="128" y="68" style="fill:var(--warn);font-size:8px">FAIL</text>
+        </svg></div>
+        <h3>Verdict branch &amp; gate</h3>
+        <p>Route on the verifier's verdict. PASS heads to a human gate for sign-off; FAIL composes a scoped fix flow. You hold the checkpoints that matter.</p>
+      </div>
+    </div>
+    <p class="muted" style="font-size:13.5px;margin-top:18px;text-align:center;max-width:720px;margin-left:auto;margin-right:auto">The executor shells one agent per node under an <span class="frost">enforced output contract</span> — no stdout-sniffing. Every read &amp; write is attributed to its repo; a write to a read-only mount is flagged loudly.</p>
+  </div></section>
+
+  <hr class="divider">
+
+  <!-- THE APP -->
+  <section id="app"><div class="wrap reveal">
+    <div class="sec-head">
+      <span class="eyebrow">the control plane</span>
+      <h2>Watch the whole forge at a glance.</h2>
+      <p>A desktop app over the same file-based state — no IPC, no server. The run canvas shows the live graph; the feed rail beside it carries events, decisions, and the gates waiting on you. Approve, request changes, or take over the terminal, all in one place.</p>
+    </div>
+    <div class="frame">
+      <div class="titlebar"><div class="tl-dots"><i></i><i></i><i></i></div><span class="tl-title">Hearth</span></div>
+      <div class="ws">
+        <aside class="ws-side">
+          <div class="sb"><svg viewBox="0 0 100 100"><use href="#mark" fill="#FAF9F5"/></svg><b>HE<span class="ember">A</span>RTH</b></div>
+          <div class="navi"><svg viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h12"/></svg><span>Inbox</span><span class="bdg">1</span></div>
+          <div class="navi"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16"/></svg><span>Backlog</span></div>
+          <div class="navi on"><svg viewBox="0 0 24 24"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="17" r="3"/><path d="M7 10v4a3 3 0 0 0 3 3h4"/></svg><span>Topics</span></div>
+          <div class="navi"><svg viewBox="0 0 24 24"><path d="M9 3v6l-3 3 3 3v6M15 3v6l3 3-3 3v6"/></svg><span>Adapters</span></div>
+          <div class="navi"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Feed</span></div>
+        </aside>
+        <div class="ws-canvas">
+          <div class="ws-strip"><span class="sd"></span><span class="st">checkout-rounding-fix</span><span class="sm">Run R-1781 · iter 2 · done</span></div>
+          <svg class="fg" viewBox="0 0 420 460" aria-label="A completed run: build and verify passed, delivery gate open" style="max-width:300px;margin:0 auto;display:block">
+            <path class="edge lit" d="M210 102 L210 191"/>
+            <path class="edge loop" d="M134 100 C 70 110, 70 185, 130 197"/>
+            <path class="edge lit" d="M210 267 L210 356"/>
+            <text class="edge-label show" x="58" y="152" fill="var(--dim)">FAIL ↺</text>
+            <text class="edge-label show" x="218" y="316" fill="var(--ok)">PASS</text>
+            <g class="n done"><rect class="node-box" x="130" y="32" width="160" height="70" rx="11" style="stroke:var(--ember)"/><rect x="130" y="32" width="3.5" height="70" rx="2" fill="var(--ember)"/><text class="node-title" x="148" y="62">Build</text><text class="node-iter" x="270" y="56" text-anchor="end">iter 2</text><text class="node-sub" x="148" y="82" fill="var(--ember)">Done</text></g>
+            <g class="n pass"><rect class="node-box" x="130" y="197" width="160" height="70" rx="11" style="stroke:var(--ok)"/><rect x="130" y="197" width="3.5" height="70" rx="2" fill="var(--frost)"/><text class="node-title" x="148" y="227">Verify</text><text class="node-iter" x="270" y="221" text-anchor="end">iter 2</text><text class="node-sub" x="148" y="247" fill="var(--ok)">Done · PASS</text></g>
+            <g class="n gate"><rect class="node-box" x="130" y="362" width="160" height="70" rx="11" style="stroke:var(--warn)"/><rect x="130" y="362" width="3.5" height="70" rx="2" fill="var(--warn)"/><text class="node-title" x="148" y="392">Deliver</text><text class="node-sub" x="148" y="412" fill="var(--warn)">Awaiting approval</text></g>
+          </svg>
+        </div>
+        <div class="ws-feed">
+          <div class="rail-h"><span>Feed</span><span class="runid">delivery gate</span></div>
+          <div class="gatecard">
+            <div class="gh"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 4v5c0 4-3 7-7 9-4-2-7-5-7-9V7z"/></svg>Delivery gate</div>
+            <div class="gb">Run passed — work committed to the topic branch. <code>2 files · +37 −9</code>. Verified PASS. Review the diff and approve to open the MR.</div>
+            <div class="gacts"><button class="ap">Approve &amp; ship</button><button>Request changes</button></div>
           </div>
-          <div class="lbl">suggested crew</div>
-          <div class="crewchips"><span class="pc">SoftwareDeveloper</span><span class="pc">QaTester</span><span class="pc">DatabaseEngineer</span></div>
-          <div class="risk"><span>⚠</span><span>Risk flag — touches payment totals. Recommends a verification gate before merge.</span></div>
-          <div class="acts"><button class="accept">Accept &amp; dispatch</button><button>Defer</button><button>Reject</button></div>
         </div>
       </div>
     </div>
-  </section>
+  </div></section>
+
+  <hr class="divider">
+
+  <!-- INTAKE / TRIAGE -->
+  <section id="intake"><div class="wrap reveal">
+    <div class="sec-head ctr">
+      <span class="eyebrow ctr">autonomous intake</span>
+      <h2>It works the backlog while you're away.</h2>
+      <p>Point Hearth at a source. On a schedule, it pulls new tickets, triages each one — complexity, the crew to throw at it, risk flags — and leaves you a single decision. Accept, and a flow is composed and fired into its own worktree.</p>
+    </div>
+    <div class="triage">
+      <div class="th"><span class="lab">Triage card</span><span class="scored">◆ scored · auto</span></div>
+      <div class="tb">
+        <div class="tt">Cart total ignores multi-currency rounding</div>
+        <div class="tid">ISSUE-1907 · storefront · pulled 19:30</div>
+        <div class="meta-row">
+          <span class="kv">archetype <b>bug</b></span>
+          <span class="kv">complexity <b>medium</b></span>
+          <span class="kv">workflow <b>crew · 3 iter</b></span>
+        </div>
+        <div class="lbl">suggested crew</div>
+        <div class="crewchips"><span class="pc">SoftwareDeveloper</span><span class="pc">QaTester</span><span class="pc">DatabaseEngineer</span></div>
+        <div class="risk"><span>⚠</span><span>Risk flag — touches payment totals. Recommends a verification gate before merge.</span></div>
+        <div class="acts"><button class="accept">Accept &amp; dispatch</button><button>Defer</button><button>Reject</button></div>
+      </div>
+    </div>
+  </div></section>
+
+  <hr class="divider">
 
   <!-- FEATURES -->
-  <section class="reveal">
-    <div class="wrap">
-      <div class="sec-head">
-        <span class="eyebrow">what's inside</span>
-        <h2>Built for real, repo-aware work.</h2>
-      </div>
-      <div class="feat">
-        <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.3"/><circle cx="6" cy="18" r="2.3"/><circle cx="18" cy="12" r="2.3"/><path d="M8.3 6.9 15.7 11M8.3 17.1 15.7 13"/></svg></div>
-          <h3>Flows & the run canvas</h3><p>Author the graph the executor runs — build/verify loops, audits, gates — on a canvas, or let the planner draft it. Watch runs light up node by node, with full read/write provenance.</p></div>
-        <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg></div>
-          <h3>Topics & mounts</h3><p>A topic binds one or more repos — each read-only or read-write — or none at all for research and automation. Isolated worktrees, branch, and state. No crossed wires.</p></div>
-        <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="12" cy="18" r="3"/><path d="M6 9v3h12V9M12 12v3"/></svg></div>
-          <h3>Crews & personas</h3><p>Builders, reviewers, verifiers, architects — specialist agents with scoped tools, dispatched in parallel and held to acceptance criteria.</p></div>
-        <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M9 3v6l-3 3 3 3v6M15 3v6l3 3-3 3v6"/></svg></div>
-          <h3>Repo adapters</h3><p>Drop a <code>.claude/hearth/</code> overlay in any repo — MR conventions, dev-server, integrations, skills. Or let an agent draft it for you.</p></div>
-        <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg></div>
-          <h3>Intake & triage</h3><p>Optional sources (like Notion) feed a backlog. Each ticket is triaged — complexity, suggested crew, risk flags — for you to accept.</p></div>
-        <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="19" cy="18" r="2"/></svg></div>
-          <h3>The feed rail</h3><p>Events, decisions, gates, and chat on one timeline — the conversation rail beside the live run canvas. Take over the terminal, request changes, sign off — all in one place.</p></div>
-        <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 2l3 5 6 .5-4.5 4 1.5 6L12 14l-6 3.5 1.5-6L3 7.5 9 7z"/></svg></div>
-          <h3>App · CLI · MCP</h3><p>Same file-based state, three surfaces. The desktop app for oversight, the CLI for speed, and an MCP server exposing it all to any Claude Code session.</p></div>
-        <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></div>
-          <h3>Scheduled & autonomous</h3><p>An in-app scheduler pulls sources and runs triage on a cadence — the queue stays warm whether the app is open or closed.</p></div>
-        <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 4.7L18.7 9l-4 3.3 1.2 4.9L12 14.6 8.1 17.2l1.2-4.9-4-3.3 4.8-1.3z"/></svg></div>
-          <h3>AI-drafted adapters</h3><p>Point the app at a repo — an agent reads its CI, scripts, and branch conventions and drafts the <code>.claude/hearth/</code> overlay for you to approve.</p></div>
-        <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l7 4v5c0 4-3 7-7 9-4-2-7-5-7-9V7z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg></div>
-          <h3>The Master Smith</h3><p>A system-aware PM that knows Hearth itself — framework, app, and CLI. Your turn-to when you're improving the forge, not just working in it.</p></div>
+  <section id="features"><div class="wrap reveal">
+    <div class="sec-head">
+      <span class="eyebrow">what's inside</span>
+      <h2>Built for real, repo-aware work.</h2>
+    </div>
+    <div class="feat">
+      <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.3"/><circle cx="6" cy="18" r="2.3"/><circle cx="18" cy="12" r="2.3"/><path d="M8.3 6.9 15.7 11M8.3 17.1 15.7 13"/></svg></div>
+        <h3>Flows &amp; the run canvas</h3><p>Author the graph the executor runs, or let the planner draft it. Watch runs light up node by node, with full read/write provenance on every touch.</p></div>
+      <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg></div>
+        <h3>Topics &amp; mounts</h3><p>A topic binds one repo, several, or none — each read-only or read-write. Isolated worktrees, branch, and state. No crossed wires.</p></div>
+      <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="12" cy="18" r="3"/><path d="M6 9v3h12V9M12 12v3"/></svg></div>
+        <h3>Crews &amp; personas</h3><p>Builders, verifiers, architects — specialist agents with scoped tools, staffed per node and held to acceptance criteria.</p></div>
+      <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l7 4v5c0 4-3 7-7 9-4-2-7-5-7-9V7z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg></div>
+        <h3>Delivery gates</h3><p>When a run passes, the app commits the work and opens a delivery gate with the diff attached — so nothing leaves the topic without your go-ahead.</p></div>
+      <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M9 3v6l-3 3 3 3v6M15 3v6l3 3-3 3v6"/></svg></div>
+        <h3>Repo adapters</h3><p>Drop a <code>.claude/hearth/</code> overlay in any repo — MR conventions, dev-server, integrations, skills. Or let an agent draft it for you.</p></div>
+      <div class="card"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></div>
+        <h3>Scheduled &amp; autonomous</h3><p>An in-app scheduler pulls sources and runs triage on a cadence — the queue stays warm whether the app is open or closed.</p></div>
+    </div>
+  </div></section>
+
+  <hr class="divider">
+
+  <!-- SURFACES -->
+  <section id="surfaces"><div class="wrap reveal">
+    <div class="sec-head ctr">
+      <span class="eyebrow ctr">one state, three surfaces</span>
+      <h2>App, CLI, and MCP — over the same files.</h2>
+      <p>Every event, command, decision, and run record is a file on disk. The work survives context resets, and every surface reads the same state — no database, no IPC, no drift.</p>
+    </div>
+    <div class="surf">
+      <div class="scell"><div class="si"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 21h8"/></svg></div>
+        <h3>Desktop app</h3><p>The control plane — run canvas, feed rail, inbox of decisions, adapters. Oversight at a glance.</p></div>
+      <div class="scell"><div class="si"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M7 9l3 3-3 3M13 15h4"/></svg></div>
+        <h3>CLI</h3><p>One binary for speed — status, dispatch, tail crews, manage topics. The forge from the terminal.</p></div>
+      <div class="scell"><div class="si"><svg viewBox="0 0 24 24"><path d="M12 2l3 5 6 .5-4.5 4 1.5 6L12 14l-6 3.5 1.5-6L3 7.5 9 7z"/></svg></div>
+        <h3>MCP server</h3><p>Exposes the whole state to any Claude Code session — plan flows, fire runs, raise gates, from your editor.</p></div>
+    </div>
+    <div class="frame" style="margin-top:22px">
+      <div class="titlebar"><div class="tl-dots"><i></i><i></i><i></i></div><span class="tl-title">~/work — hearth</span></div>
+      <div class="term">
+        <div class="cmd"><span class="p">❯</span> hearth status</div>
+        <div style="height:8px"></div>
+        <div class="row"><span class="k">topics</span><span>2 active / 4 total</span></div>
+        <div class="row"><span class="k">pending gates</span><span class="warnv">1</span></div>
+        <div class="row"><span class="k">open escalations</span><span>0 <span class="sl">(0 aging)</span></span></div>
+        <div style="height:12px"></div>
+        <div class="sl">active topics</div>
+        <div class="row"><span class="k">◆ checkout-rounding-fix</span><span class="warnv">delivered</span> <span class="sl">· gate open · 2 files</span></div>
+        <div class="row"><span class="k">◇ api-pagination</span><span class="frostv">active</span> <span class="sl">· build → verify · iter 1</span></div>
+        <div style="height:10px"></div>
+        <div class="cmd"><span class="p">❯</span> <span class="cur"></span></div>
       </div>
     </div>
-  </section>
+  </div></section>
+
+  <hr class="divider">
 
   <!-- LIFECYCLE -->
-  <section class="reveal">
-    <div class="wrap">
-      <div class="life">
-        <span class="eyebrow" style="justify-content:center">the lifecycle</span>
-        <h2 style="font-size:clamp(22px,4.5vw,30px);font-weight:600;margin-top:12px">Every topic moves through the fire.</h2>
-        <div class="track">
-          <div class="lstate"><svg class="ldia" viewBox="0 0 100 100"><use href="#mark" fill="#6A6A66"/></svg><span class="lb">idle</span></div>
-          <span class="arr">→</span>
-          <div class="lstate"><svg class="ldia" viewBox="0 0 100 100"><use href="#mark" fill="#D97757"/></svg><span class="lb" style="color:var(--ember)">active</span></div>
-          <span class="arr">→</span>
-          <div class="lstate"><svg class="ldia" viewBox="0 0 100 100"><use href="#mark" fill="#7DA8B8"/></svg><span class="lb" style="color:var(--frost)">cooled</span></div>
-          <span class="arr">→</span>
-          <div class="lstate"><svg class="ldia" viewBox="0 0 100 100"><use href="#mark" fill="#FAF9F5"/></svg><span class="lb">quenched</span></div>
-        </div>
+  <section id="lifecycle"><div class="wrap reveal">
+    <div class="life">
+      <span class="eyebrow ctr">the lifecycle</span>
+      <h2 style="font-size:clamp(22px,4.5vw,32px);font-weight:700;margin-top:12px;letter-spacing:-.02em">Every topic moves through the fire.</h2>
+      <p class="muted" style="max-width:560px;margin:10px auto 0;font-size:15px">Idle until you kindle it. Active while the crews burn. Cooled on a clean pass, quenched on a failure — then back to rest.</p>
+      <div class="track">
+        <div class="lstate"><svg class="ldia" viewBox="0 0 100 100"><use href="#mark" fill="#6A6A66"/></svg><span class="lb">idle</span></div>
+        <span class="arr">→</span>
+        <div class="lstate burn"><svg class="ldia" viewBox="0 0 100 100"><use href="#mark" fill="#D97757"/></svg><span class="lb" style="color:var(--ember)">active</span></div>
+        <span class="arr">→</span>
+        <div class="lstate"><svg class="ldia" viewBox="0 0 100 100"><use href="#mark" fill="#7faf6f"/></svg><span class="lb" style="color:var(--ok)">cooled</span></div>
+        <span class="arr">→</span>
+        <div class="lstate"><svg class="ldia" viewBox="0 0 100 100"><use href="#mark" fill="#FAF9F5"/></svg><span class="lb">quenched</span></div>
       </div>
     </div>
-  </section>
+  </div></section>
+
+  <!-- FINALE -->
+  <section id="get"><div class="wrap reveal">
+    <div class="finale">
+      <div class="mk3"><svg viewBox="0 0 100 100" width="54" height="54"><use href="#mark" fill="#FAF9F5"/></svg></div>
+      <h2>Kindle your first topic.</h2>
+      <p>Hearth v1.0 ships as a desktop app, a framework, and a CLI — over one durable, file-based state. Point it at a repo and compose your first flow.</p>
+      <div class="cta-row">
+        <a class="btn btn-prim" href="https://github.com/Trollyal/hearth-app/releases/latest" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg> Download v1.0</a>
+        <a class="btn btn-ghost" href="https://github.com/Trollyal/hearth-app" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.3 3.3 0 0 0-.9-2.5c3-.3 6.2-1.5 6.2-6.7A5.2 5.2 0 0 0 20 5.8 4.8 4.8 0 0 0 19.9 2S18.7 1.6 16 3.5a13.4 13.4 0 0 0-7 0C6.3 1.6 5.1 2 5.1 2A4.8 4.8 0 0 0 5 5.8a5.2 5.2 0 0 0-1.4 3.6c0 5.2 3.2 6.4 6.2 6.7a3.3 3.3 0 0 0-.9 2.5V22"/></svg> View on GitHub</a>
+      </div>
+    </div>
+  </div></section>
 
 </main>
 
-<footer>
-  <div class="wrap foot">
-    <div class="l"><svg viewBox="0 0 100 100"><use href="#mark" fill="#FAF9F5"/></svg><b>HE<span class="ember">A</span>RTH</b></div>
-    <div class="meta">
-      <div class="ststrip"><span class="e">idle</span> · <span class="e">active</span> · cooled · quenched</div>
-      <div>multi-agent orchestration framework · v1.0.0</div>
-    </div>
+<footer><div class="wrap foot">
+  <div class="l"><svg viewBox="0 0 100 100"><use href="#mark" fill="#FAF9F5"/></svg><b>HE<span class="ember">A</span>RTH</b></div>
+  <div class="meta">
+    <div><span class="e">idle</span> · <span class="e">active</span> · cooled · quenched</div>
+    <div>app-as-orchestrator · framework · app · CLI · v1.0.0</div>
   </div>
-</footer>
+</div></footer>
 
 <script>
-  // gentle scroll reveals — with a hard failsafe so a section is NEVER left hidden
-  const reveal=el=>el.classList.add('in');
+  // ── scroll reveals (failsafe so a section is never left hidden) ──
   const els=[...document.querySelectorAll('.reveal')];
-  const io=new IntersectionObserver((es)=>es.forEach(e=>{if(e.isIntersecting){reveal(e.target);io.unobserve(e.target)}}),{rootMargin:'0px 0px -8% 0px',threshold:.05});
+  const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{rootMargin:'0px 0px -8% 0px',threshold:.04});
   els.forEach(el=>io.observe(el));
-  setTimeout(()=>els.forEach(reveal),2000); // failsafe: slow/odd browsers, no-scroll, screenshots
+  setTimeout(()=>els.forEach(el=>el.classList.add('in')),2200);
+
+  // ── live run-canvas sequencer ──
+  (function(){
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const $=id=>document.getElementById(id);
+    const build=$('n-build'), verify=$('n-verify'), deliver=$('n-deliver');
+    if(!build) return;
+    const dB2V=$('d-b2v'), dLoop=$('d-loop'), dV2D=$('d-v2d');
+    const eB2V=$('e-b2v'), eLoop=$('e-loop'), eV2D=$('e-v2d');
+    const lLoop=$('l-loop'), lPass=$('l-pass');
+    const bIter=$('t-build-iter'), bSub=$('t-build'), vIter=$('t-verify-iter'), vSub=$('t-verify'), dSub=$('t-deliver');
+    const spark=$('spark');
+    const evs=[1,2,3,4,5].map(n=>$('ev-'+n));
+    const cls=(el,c)=>{el.setAttribute('class', c);};
+    function reset(){
+      cls(build,'n'); cls(verify,'n'); cls(deliver,'n');
+      [dB2V,dLoop,dV2D].forEach(d=>d.classList.remove('flowing'));
+      [eB2V,eLoop,eV2D].forEach(e=>e.classList.remove('lit'));
+      lLoop.classList.remove('show'); lPass.classList.remove('show');
+      bIter.textContent='iter 1'; bSub.textContent='SoftwareDeveloper';
+      vIter.textContent=''; vSub.textContent='QaTester'; dSub.textContent='queued';
+      spark.classList.remove('go');
+      evs.forEach(e=>e.classList.remove('show'));
+    }
+    // steps: [fn, holdMs]
+    const steps=[
+      [()=>{ cls(build,'n run'); bSub.textContent='Running'; evs[0].classList.add('show'); }, 1700],
+      [()=>{ cls(build,'n done'); bSub.textContent='Done'; eB2V.classList.add('lit'); dB2V.classList.add('flowing'); }, 950],
+      [()=>{ dB2V.classList.remove('flowing'); cls(verify,'n run'); vIter.textContent='iter 1'; vSub.textContent='Running'; evs[1].classList.add('show'); }, 1700],
+      [()=>{ cls(verify,'n'); vSub.textContent='FAIL'; eLoop.classList.add('lit'); lLoop.classList.add('show'); dLoop.classList.add('flowing'); evs[2].classList.add('show'); }, 1500],
+      [()=>{ dLoop.classList.remove('flowing'); cls(build,'n run'); bIter.textContent='iter 2'; bSub.textContent='Running'; }, 1500],
+      [()=>{ cls(build,'n done'); bSub.textContent='Done'; dB2V.classList.add('flowing'); }, 900],
+      [()=>{ dB2V.classList.remove('flowing'); cls(verify,'n run'); vIter.textContent='iter 2'; vSub.textContent='Running'; }, 1500],
+      [()=>{ cls(verify,'n pass'); vSub.textContent='Done · PASS'; eV2D.classList.add('lit'); lPass.classList.add('show'); dV2D.classList.add('flowing'); evs[3].classList.add('show'); }, 1300],
+      [()=>{ dV2D.classList.remove('flowing'); cls(deliver,'n gate'); dSub.textContent='Awaiting approval'; spark.classList.add('go'); evs[4].classList.add('show'); }, 3000],
+    ];
+    if(reduce){
+      // settle on the meaningful end-state, no looping
+      cls(build,'n done'); bIter.textContent='iter 2'; bSub.textContent='Done';
+      cls(verify,'n pass'); vIter.textContent='iter 2'; vSub.textContent='Done · PASS';
+      cls(deliver,'n gate'); dSub.textContent='Awaiting approval';
+      eB2V.classList.add('lit'); eV2D.classList.add('lit'); lPass.classList.add('show');
+      evs.forEach(e=>e.classList.add('show'));
+      return;
+    }
+    // ONE chain only — a single recursive timeout, never re-spawned. The observer
+    // toggles a `paused` flag (saving cycles off-screen) without ever starting a
+    // second loop, which would race the first and garble the node states.
+    let i=0, paused=false;
+    function step(){
+      if(paused){ setTimeout(step, 400); return; }
+      const [fn,hold]=steps[i]; fn(); i++;
+      if(i>=steps.length){ setTimeout(()=>{ reset(); i=0; setTimeout(step,700); }, hold); }
+      else setTimeout(step, hold);
+    }
+    const stage=document.querySelector('.stage');
+    const sio=new IntersectionObserver(es=>es.forEach(e=>{ paused=!e.isIntersecting; }),{threshold:.12});
+    sio.observe(stage);
+    reset(); setTimeout(step, 500);
+  })();
 </script>
 </body>
 </html>
